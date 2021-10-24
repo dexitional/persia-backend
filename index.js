@@ -4,16 +4,9 @@ var bodyParser = require('body-parser');
 //var session = require('express-session');
 var cors = require('cors');
 var compression = require('compression');
-const db = require('./config/mysql')
-const { customAlphabet } = require('nanoid');
-const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz',8);
-const nanopw = customAlphabet('1234567890',8);
-//var helmet = require('helmet');
-//var json2xls = require("json2xls");
 
 //  Include Routes
 var auth = require('./route/authRoute');
-//var student = require('./route/studentRoute');
 var alumni = require('./route/alumniRoute');
 app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
@@ -22,17 +15,6 @@ app.use("/public",express.static("public"));
 app.use(cors()); 
 app.use(compression()); 
 
-//app.use(helmet()); // Security & Vulnearbilities guard
-//app.use(json2xls.middleware); // Excel Export
-
-/*
-app.use(session({
-  secret: 'sess', 
-  resave: true,
-  saveUninitialized: false,
-  cookie: { secure: false , maxAge:  24 * 60 * 60 * 1000 }
-}));
-*/
 
 // Initialise App Routes
 app.use('/api',auth); 
