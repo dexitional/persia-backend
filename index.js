@@ -13,11 +13,8 @@ const nanopw = customAlphabet('1234567890',8);
 
 //  Include Routes
 var auth = require('./route/authRoute');
-var admission = require('./route/admissionRoute');
-var site = require('./route/siteRoute');
-var admission = require('./route/admissionRoute');
-var student = require('./route/studentRoute');
-var api = require('./route/apiRoute');
+//var student = require('./route/studentRoute');
+var alumni = require('./route/alumniRoute');
 app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -39,10 +36,7 @@ app.use(session({
 
 // Initialise App Routes
 app.use('/api',auth); 
-app.use('/api',student); 
-app.use('/api',admission); 
-app.use('/api/v1',api); 
-app.use('/',site); 
+app.use('/api',alumni); 
 
 // Start Server Instance
 var port = process.env.PORT || 5020;

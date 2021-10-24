@@ -31,19 +31,19 @@ module.exports.SSO = {
    },
 
    fetchSSOUser : async (tag) => {
-      const sql = "select u.*,p.photo_id from identity.user u left join identity.photo p on p.uid = u.uid where u.tag = '"+tag+"'";
+      const sql = "select u.*,p.photo_id from ehub_identity.user u left join ehub_identity.photo p on p.uid = u.uid where u.tag = '"+tag+"'";
       const res = await db.query(sql);
       return res;
    },
 
    insertPhoto : async (uid,tag,group_id,path) => {
-      const sql = "insert into identity.photo(uid,tag,path,group_id) values("+uid+",'"+tag+"','"+path+"',"+group_id+")";
+      const sql = "insert into ehub_identity.photo(uid,tag,path,group_id) values("+uid+",'"+tag+"','"+path+"',"+group_id+")";
       const res = await db.query(sql);
       return res;
    },
 
    updatePhoto : async (pid,path) => {
-      const sql = "update identity.photo set path = '"+path+"' where photo_id = "+pid;
+      const sql = "update ehub_identity.photo set path = '"+path+"' where photo_id = "+pid;
       const res = await db.query(sql);
       return res;
    },
@@ -60,7 +60,7 @@ module.exports.SSO = {
         case '04': // Applicant (Job)
            sql = "select from identity.photo p where p.uid = "+uid; break;
         case '05': // Alumni
-           sql = "select from identity.photo p where p.uid = "+uid; break;
+           sql = "select from ehub_alumni.member p where p.refno = "+uid; break;
         default :  // Staff
            sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from identity.user u left join hrs.staff s on u.tag = s.staff_no left join hrs.job j on j.id = s.job_id left join utility.unit x on s.unit_id = x.id left join utility.region r on r.id = s.region_id left join utility.country c on c.id = s.country_id where u.uid = "+uid; break;
       } const res = await db.query(sql);
@@ -80,25 +80,25 @@ module.exports.SSO = {
    },
 
    updateUserByEmail : async (email,data) => {
-      const sql = "update identity.user set ? where username = '"+email+"'";
+      const sql = "update ehub_identity.user set ? where username = '"+email+"'";
       const res = await db.query(sql,data);
       return res;
    },
 
    insertSSOUser : async (data) => {
-      const sql = "insert into identity.user set ?";
+      const sql = "insert into ehub_identity.user set ?";
       const res = await db.query(sql,data);
       return res;
    },
 
    insertSSORole : async (data) => {
-      const sql = "insert into identity.user_role set ?";
+      const sql = "insert into ehub_identity.user_role set ?";
       const res = await db.query(sql,data);
       return res;
    },
 
    deleteSSORole : async (uid,role) => {
-      const sql = "delete from identity.user_role where uid = "+uid+" and arole_id = "+role;
+      const sql = "delete from ehub_identity.user_role where uid = "+uid+" and arole_id = "+role;
       const res = await db.query(sql);
       return res;
    },
