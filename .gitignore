@@ -4,4 +4,4 @@ config/credentials.json
 config/gsuite.js
 config/gsuite1.js
 config/gsuite2.js
-config/mysql.js
+#config/mysql.js
