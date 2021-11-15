@@ -137,7 +137,7 @@ module.exports = {
                      // Insert New SSO User
                      userdata = { ...userdata,password:sha1(otp), group_id:user.gid, tag }
                      const ins = await SSO.insertSSOUser(userdata)
-                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:insertId }
+                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:ins.insertId }
                    }
                    sdata = { user,userdata }
                
@@ -154,7 +154,7 @@ module.exports = {
                      // Insert New SSO User
                      userdata = { ...userdata,password:sha1(otp), group_id:user.gid,tag }
                      const ins = await SSO.insertSSOUser(userdata)
-                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:insertId }
+                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:ins.insertId }
                    }
                    sdata = { user,userdata }
                }
