@@ -18,14 +18,23 @@ module.exports.SSO = {
    },
 
    updateDomainPassword : async (tag,gid,password,sdata) => {
-      var sql;
+      var sql,res;
       if(parseInt(gid) == 1){
          sql = "update osisextra.useraccount set password = md5('"+password+"'), cdate = now() where regno = '"+tag+"'";
+         res = await db.query(sql);
       }else if(parseInt(gid) == 2){
-         sql = "update hr.`user` set password = '"+password+"' where staff_no = '"+tag+"'";
+         const isExist = await db.query("select * from hr.`user` where staff_no = '"+tag+"'")
+         if(isExist && isExist.length > 0){
+            sql = "update hr.`user` set password = '"+password+"' where staff_no = '"+tag+"'";
+            res = await db.query(sql);
+         }else{
+            const dt = { username:tag, staff_no:tag, password, role:'03',roles:'03'}
+            sql = "insert into hr.`user` set ?";
+            res = await db.query(sql,dt);
+         }
       }
-      const res = await db.query(sql);
-      if(res && res.affectedRows > 0){
+      
+      if(res && (res.affectedRows > 0 || res.insertId > 0)){
          const sql = "update ehub_identity.user set flag_ad = "+sdata.userdata.flag_ad+",flag_gs = "+sdata.userdata.flag_gs+" where uid = "+sdata.userdata.uid;
          const resx = await db.query(sql);
       }

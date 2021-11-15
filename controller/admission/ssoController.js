@@ -172,8 +172,8 @@ module.exports = {
               var sendcode;
               // Send OTP-SMS
               const msg = `Hi ${user.fname}, Reset OTP code is ${otp}`
-              //const sm = await sms(newphone,msg)
-              const sm = { code: 1000 }
+              const sm = await sms(newphone,msg)
+              //const sm = { code: 1000 }
               sendcode = sm.code
               console.log(sm.code)
               console.log(sdata)
