@@ -1,4 +1,4 @@
-export const getTargetGroup = (group_code) => {
+const getTargetGroup = (group_code) => {
     var yr
     switch(group_code){
       case '1000':  yr = `Year 1 Only`; break;
@@ -19,7 +19,7 @@ export const getTargetGroup = (group_code) => {
 }
 
 
-export const getUsername = (fname,lname) => {
+const getUsername = (fname,lname) => {
   var username,fr,lr;
   let fs = fname ? fname.trim().split(' '):null
   let ls = lname ? lname.trim().split(' '):null
@@ -41,8 +41,33 @@ export const getUsername = (fname,lname) => {
    return `${fr}.${lr}`.toLowerCase();
 }
 
+const cleanPhone = (phone) => {
+   const new_phone = phone && phone.split('/')
+   if(new_phone){
+     phone = new_phone[0].toString().replace(/-/g,"") 
+     phone = phone.toString().replace(/=/g,"") 
+     phone = phone.toString().replace(/ /g,"") 
+     phone = phone.toString().replace(/\//g,"") 
 
-export const getSemestersByCode = (group_code) => {
+     if(phone.length == 10) return phone
+     return null; 
+
+   }else{
+     return null;
+   }
+}
+
+const decodeBase64Image = (dataString) => {
+  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+  response = {};
+  if (matches.length !== 3) return new Error('Invalid input string');
+  response.type = matches[1];
+  response.data = new Buffer(matches[2], 'base64');
+  return response;
+}
+
+
+const getSemestersByCode = (group_code) => {
   console.log(group_code)
   var yr
   switch(group_code){
@@ -65,3 +90,6 @@ export const getSemestersByCode = (group_code) => {
   }
   return yr
 }
+
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,cleanPhone,decodeBase64Image }

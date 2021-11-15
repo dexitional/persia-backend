@@ -1,0 +1,55 @@
+{
+    "apps" : [
+            {
+                "name": "persia",
+                "script": "index.js",
+                "watch": true,
+                "ignore_watch" : ["node_modules", "public","config","views"],
+                "env": {
+                    "PORT": 5020,
+                    "NODE_ENV": "development",
+                    "AD1_HOST" : "ldaps://win-ad-1.ucc.edu.gh:636",
+                    "AD1_USER" : "ebenezer.ackah@ucc.edu.gh",
+                    "AD1_PASS" : "p@ssw0rd1234",
+
+                    "AD2_HOST" : "ldaps://192.168.0.242:636",
+                    "AD2_USER" : "ekbackah@stu.ucc.edu.gh",
+                    "AD2_PASS" : "p@ssw0rd1234",
+
+                    "AD3_HOST" : "ldaps://10.10.22.149:636",
+                    "AD3_USER" : "fred@mis.dev",
+                    "AD3_PASS" : "DHRCdodowa1",
+
+                    "MYSQL_HOST" :"127.0.0.1",
+                    "MYSQL_PORT" : 8889,
+                    "MYSQL_USER" :"root",
+                    "MYSQL_PASS" :"root",
+                    "MYSQL_DB" : "ehub_alumni"
+                },
+
+                "env_online": {
+                    "PORT": 5020,
+                    "NODE_ENV": "production",
+                    "AD1_HOST" : "ldaps://win-ad-1.ucc.edu.gh:636",
+                    "AD1_USER" : "ebenezer.ackah@ucc.edu.gh",
+                    "AD1_PASS" : "p@ssw0rd1234",
+
+                    "AD2_HOST" : "ldaps://192.168.0.242:636",
+                    "AD2_USER" : "ekbackah@stu.ucc.edu.gh",
+                    "AD2_PASS" : "p@ssw0rd1234",
+
+                    "AD3_HOST" : "ldaps://10.10.22.149:636",
+                    "AD3_USER" : "fred@mis.dev",
+                    "AD3_PASS" : "DHRCdodowa1",
+
+                    "MYSQL_HOST" :"192.168.0.10",
+                    "MYSQL_PORT" : 3306,
+                    "MYSQL_USER" :"ekbackah",
+                    "MYSQL_PASS" :"DHRCdodowa1",
+                    "MYSQL_DB" : "ad",
+
+                    "AD_DATA" :" Staff: ldaps://win-ad-1.ucc.edu.gh:636 / 192.168.0.220:636, Student: ldaps://win-stu-ad-1.stu.ucc.edu.gh:636 / 192.168.0.242:636"
+                }
+            }  
+    ]
+  }

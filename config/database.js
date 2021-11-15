@@ -1,17 +1,5 @@
 var mysql = require('mysql');
 var util = require('util');
-/*
-var pool = mysql.createPool({
-    multipleStatements: true,
-    connectionLimit : 1000,
-    host : 'localhost',
-    port : 8889,
-    user: 'root',
-    password : 'root',
-    database : 'ehub_alumni',
-});
-*/
-
 var pool = mysql.createPool({
     multipleStatements: true,
     connectionLimit : 1000,

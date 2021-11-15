@@ -14,83 +14,9 @@ const db = require('../../config/mysql')
 const { SSO } = require('../../model/mysql/ssoModel');
 const { Admission } = require('../../model/mysql/admissionModel');
 const { Student } = require('../../model/mysql/studentModel');
-
-const decodeBase64Image = (dataString) => {
-  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
-  response = {};
-  if (matches.length !== 3) return new Error('Invalid input string');
-  response.type = matches[1];
-  response.data = new Buffer(matches[2], 'base64');
-  return response;
-}
-
-
-const getTargetGroup = (group_code) => {
-  var yr
-  switch(group_code){
-    case '1000':  yr = `Year 1 Only`; break;
-    case '0100':  yr = `Year 2 Only`; break;
-    case '0010':  yr = `Year 3 Only`; break;
-    case '0001':  yr = `Year 4 Only`; break;
-    case '1100':  yr = `Year 1 & Year 2`; break;
-    case '1010':  yr = `Year 1 & Year 3`; break;
-    case '1001':  yr = `Year 1 & Year 4`; break;
-    case '1110':  yr = `Year 1,Year 2 & Year 3`; break;
-    case '1101':  yr = `Year 1,Year 2 & Year 4`; break;
-    case '1111':  yr = `Year 1,Year 2,Year 3 & Year 4`; break;
-    case '0000':  yr = `International students`; break;
-    default: yr = `International students`; break;
-  }
-  return yr
-}
-
-const getSemestersByCode = (group_code) => {
- console.log(group_code)
- var yr
- switch(group_code){
-   case '1000':  yr = `1,2`; break;
-   case '0100':  yr = `3,4`; break;
-   case '0010':  yr = `5,6`; break;
-   case '0001':  yr = `7,8`; break;
-   case '0011':  yr = `5,6,7,8`; break;
-   case '0101':  yr = `3,4,7,8`; break;
-   case '0110':  yr = `3,4,5,6`; break;
-   case '0111':  yr = `3,4,5,6,7,8`; break;
-   case '1011':  yr = `1,2,5,6,7,8`; break;
-   case '1100':  yr = `1,2,3,4`; break;
-   case '1010':  yr = `1,2,5,6`; break;
-   case '1001':  yr = `1,2,7,8`; break;
-   case '1110':  yr = `1,2,3,4,5,6`; break;
-   case '1101':  yr = `1,2,3,4,7,8`; break;
-   case '1111':  yr = `1,2,3,4,5,6,7,8`; break;
-   case '0000':  yr = `1,2,3,4,5,6,7,8`; break;
- }
- console.log(yr)
- return yr
-}
-
-const getUsername = (fname,lname) => {
-  var username,fr,lr;
-  let fs = fname ? fname.trim().split(' '):null
-  let ls = lname ? lname.trim().split(' '):null
-  if(fs && fs.length > 0){
-    for(var i = 0; i < fs.length; i++){
-       if(i == 0) fr = fs[i].trim()
-    }
-  }
-  if(ls && ls.length > 0){
-     for(var i = 0; i < ls.length; i++){
-       if(i == ls.length-1) lr = (ls[i].split('-')[0].trim()).split('.').join("")
-     }
-   }
-   if(!lr && fs.length > 1) lr = (fs[fs.length-1].split('-')[0].trim()).split('.').join("") 
-   if(!fr && ls.length > 1){
-      fr = (fs[1].trim()).split('.').join("")
-      lr = (ls[ls.length-1].split('-')[0].trim()).split('.').join("")
-   } 
-
-   return `${fr}.${lr}`.toLowerCase();
-}
+const { cleanPhone } = require('../../middleware/util');
+const { Box } = require('../../model/mysql/boxModel');
+const { exit } = require('process');
 
 
 module.exports = {
@@ -128,32 +54,143 @@ module.exports = {
 
 
   sendOtp : async (req,res) => {
-    var {email} = req.body;
+    
     try{
-      var user = !email.includes('@') ? await SSO.fetchUserByPhone(email) : await SSO.verifyUserByEmail({email});
-      if(user && user.length > 0){
-        const otp = digit() // Generate OTP 
-        const dt = { access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
-        const ups = await SSO.updateUserByEmail(user[0].username,dt)
-        var sendcode;
-        if(ups){
-          const person = await SSO.fetchUser(user[0].uid,user[0].group_id)
-          
-          // Send OTP-SMS
-          const msg = `Hi ${person[0].fname}, Reset OTP code is ${otp}`
-          const sm = await sms(person && person[0].phone,msg)
-          sendcode = sm.code
-          console.log(sm.code)
-          //if(sm && sm.code == '1000') sendcode = '1000'
-
-        }
-        if(sendcode == 1000) { res.status(200).json({success:true, data: {otp,email:user[0].username } }) }
-        else if(sendcode == 1003) { res.status(200).json({ success:false, data: null, msg:"OTP credit exhausted!" }) }
-        else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
-        
+      var { email } = req.body;
+      var user = await SSO.fetchUserByVerb(email)
+      const newphone = cleanPhone(user.phone)
+      const { mail,tag }  = user;
+      const otp = digit() // Generate OTP 
+      const dt = { access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
+       
+      var msg;
+      console.log(newphone)
+      console.log(mail)
+      if(!newphone) {
+         res.status(200).json({ success:false, data:null, msg:`${user.gname} phone incorrect, visit MIS-DICT for assistance !` });
       }else{
-        res.status(200).json({ success:false, data: null, msg:"User does not exist!" });
+         // If User exist
+         if(user){
+            var sdata;
+
+            if(parseInt(user.gid) == 1){ 
+                // STUDENTS
+                var userdata;
+                if(mail){
+                    const domain = 'stu.ucc.edu.gh'
+                    const dm = { ...user }
+                    const ad = await Box.checkAdUser(dm,domain) // Check existence in SSO-AD
+                    const gs = await Box.checkGsUser(dm)        // Check existence in SSO-GSuite
+                    userdata = { username:mail, flag_ad:ad?1:0, flag_gs:gs?1:0, access_token:otp, access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
+                    // Check User SSO 
+                    const isUser = await SSO.fetchSSOUser(tag)
+                    if(isUser && isUser.length > 0){
+                      // Update Existing SSO User
+                      const ups = await SSO.updateUserByEmail(isUser[0].username,userdata)
+                      if(ups && ups.affectedRows > 0) userdata = { ...userdata,uid:isUser[0].uid }
+                    }else{
+                      // Insert New SSO User
+                      userdata = { ...userdata,password:sha1(otp), group_id:user.gid, tag }
+                      const ins = await SSO.insertSSOUser(userdata)  
+                      if(ins && ins.insertId > 0) userdata = { ...userdata,uid:ins.insertId }
+                    }
+                    sdata = { user,userdata }
+                
+                }else{
+                    // Note if UCC Mail does not exist, reset portal password but leave gsuite & AD && send SMS for update with MIS && Log Password for later setup of AD & Gsuite
+                    userdata = { username:tag, flag_ad:0, flag_gs:0,access_token:otp,access_expire:moment().add(5,'minutes')  }
+                    // Check User SSO 
+                    const isUser = await SSO.fetchSSOUser(tag)
+                    if(isUser && isUser.length > 0){
+                      // Update Existing SSO User
+                      const ups = await SSO.updateUserByEmail(isUser[0].username,userdata)
+                      if(ups && ups.affectedRows > 0) userdata = { ...userdata,uid:isUser[0].uid }
+                    }else{
+                      // Insert New SSO User
+                      userdata = { ...userdata,password:sha1(otp), group_id:user.gid, tag }
+                      const ins = await SSO.insertSSOUser(userdata)
+                      if(ins && ins.insertId > 0) userdata = { ...userdata,uid:ins.insertId }
+                    }
+                    sdata = { user,userdata }
+                }
+
+                
+            }else if(parseInt(user.gid) == 2){ 
+               // STAFF
+               var userdata;
+               const domain = 'ucc.edu.gh'
+               // Run Mail Generator
+               const genMail = await SSO.generateMail(user,domain)
+
+               if(mail){
+                   const dm = { ...user }
+                   const ad = await Box.checkAdUser(dm,domain) // Check existence in SSO-AD
+                   const gs = await Box.checkGsUser(dm)        // Check existence in SSO-GSuite
+                   userdata = { username:mail, flag_ad:ad?1:0, flag_gs:gs?1:0, access_token:otp, access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
+                   // Check User SSO 
+                   const isUser = await SSO.fetchSSOUser(tag)
+                   if(isUser && isUser.length > 0){
+                     // Update Existing SSO User
+                     const ups = await SSO.updateUserByEmail(isUser[0].username,userdata)
+                     if(ups && ups.affectedRows > 0) userdata = { ...userdata,uid:isUser[0].uid }
+                   }else{
+                     // Insert New SSO User
+                     userdata = { ...userdata,password:sha1(otp), group_id:user.gid, tag }
+                     const ins = await SSO.insertSSOUser(userdata)
+                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:insertId }
+                   }
+                   sdata = { user,userdata }
+               
+               }else{
+                   // Note if UCC Mail does not exist, reset portal password but leave gsuite & AD && send SMS for update with MIS && Log Password for later setup of AD & Gsuite
+                   userdata = { username:tag, flag_ad:0, flag_gs:0,access_token:otp,access_expire:moment().add(5,'minutes')  }
+                   // Check User SSO 
+                   const isUser = await SSO.fetchSSOUser(tag)
+                   if(isUser && isUser.length > 0){
+                     // Update Existing SSO User
+                     const ups = await SSO.updateUserByEmail(isUser[0].username,userdata)
+                     if(ups && ins.affectedRows > 0) userdata = { ...userdata,uid:isUser[0].uid }
+                   }else{
+                     // Insert New SSO User
+                     userdata = { ...userdata,password:sha1(otp), group_id:user.gid,tag }
+                     const ins = await SSO.insertSSOUser(userdata)
+                     if(ins && ins.insertId > 0) userdata = { ...userdata,uid:insertId }
+                   }
+                   sdata = { user,userdata }
+               }
+
+
+            }else if(parseInt(user.gid) == 3){ // NSS
+
+            }else if(parseInt(user.gid) == 4){ // Job
+
+            }else if(parseInt(user.gid) == 5){ // Alumni
+
+            }
+
+            if(sdata){
+              var sendcode;
+              // Send OTP-SMS
+              const msg = `Hi ${user.fname}, Reset OTP code is ${otp}`
+              //const sm = await sms(newphone,msg)
+              const sm = { code: 1000 }
+              sendcode = sm.code
+              console.log(sm.code)
+              console.log(sdata)
+              if(sendcode == 1000) { res.status(200).json({success:true, data: { otp, email:  sdata.userdata.username, sdata } }) }
+              else if(sendcode == 1003) { res.status(200).json({ success:false, data: null, msg:"OTP credit exhausted!" }) }
+              else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
+              
+            }else{
+              res.status(200).json({ success:false, data: null, msg:"Something wrong happened!" });
+            }
+
+         }else{
+           res.status(200).json({ success:false, data: null, msg:"User does not exist!" });
+         }
+         
       }
+      
     }catch(e){
         console.log(e)
         res.status(200).json({success:false, data: null, msg: "Please try again later."});
@@ -162,11 +199,12 @@ module.exports = {
 
 
   verifyOtp : async (req,res) => {
-    const {email,token} = req.body;
+    const { email,token,sdata } = req.body;
     try{
-      var user = await SSO.verifyUserByEmail({email});
-      if(user && user.length > 0 && user[0].access_token == token){
-        res.status(200).json({success:true, data: token }) 
+      //var user = await SSO.verifyUserByEmail({email});
+      if(sdata  && sdata.userdata.access_token == token){
+      //if(user  && user[0].access_token == token){
+        res.status(200).json({success:true, data: { token,sdata } }) 
       }else{
         res.status(200).json({ success:false, data: null, msg:"OTP verification failed!" });
       }
@@ -178,17 +216,44 @@ module.exports = {
 
 
   sendPwd : async (req,res) => {
-    const {email,password} = req.body;
+    var { email,password,sdata } = req.body;
     try{
+      // SSO Password Reset
       const dt = { password : sha1(password.trim()) }
       const ups = await SSO.updateUserByEmail(email,dt)
-      if(ups){ res.status(200).json({success:true, data: 'password changed!' }) 
+      
+      if(sdata.user.mail){
+        const ad_domain = parseInt(sdata.user.gid) == 1 ? 'stu.ucc.edu.gh':'ucc.edu.gh'
+        const ad_location = parseInt(sdata.user.gid) == 1 ? 'students':'staff'
+        const userName = sdata.user.mail.split('@')[0]
+        const ad_data = { mail:sdata.user.mail,password,userName,commonName:`${sdata.user.name}`,firstName:sdata.user.fname,lastName:sdata.user.lname,email:sdata.user.mail,title:sdata.user.tag,location:ad_location,objectClass: ["top", "person", "organizationalPerson", "user"],phone:sdata.user.phone,email:sdata.user.mail,passwordExpires:false,enabled:true,description:sdata.user.descriptor,unit:sdata.user.unitname}
+        const gs_data = { mail:sdata.user.mail,password,commonName:`${sdata.user.name}`,firstName:sdata.user.fname,lastName:sdata.user.lname,email:sdata.user.mail,title:sdata.user.tag,location:ad_location,phone: sdata.user.phone,email:sdata.user.mail,description:sdata.user.descriptor,unit:sdata.user.unitname}
+        // AD Password Reset
+        if(sdata.userdata.flag_ad){
+          const sendToAd = await Box.changeAdPwd(ad_data,ad_domain)
+        }else{
+          const sendToAd = await Box.insertAdUser(ad_data,ad_domain)
+          if(sendToAd) sdata.userdata.flag_ad = 1
+        }
+        // GS Password Reset
+        if(sdata.userdata.flag_ad){
+          const sendToGs = await Box.changeGsPwd(ad_data,ad_domain)
+        }else{
+          const sendToGs = await Box.insertGsUser(gs_data)
+          if(sendToAd) sdata.userdata.flag_gs = 1
+        }
+      }
+      
+      // Domain Password Reset
+      const sentToDomain = await SSO.updateDomainPassword(sdata.user.tag,sdata.user.gid,password,sdata)
+  
+      if(ups){ res.status(200).json({ success:true, data:'password changed!' }) 
       }else{
         res.status(200).json({ success:false, data: null, msg:"Password change failed!" });
       }
     }catch(e){
         console.log(e)
-        res.status(200).json({success:false, data: null, msg: "Please try again later."});
+        res.status(200).json({ success:false, data: null, msg:"Please try again later." });
     }
   },
 
