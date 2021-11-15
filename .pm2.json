@@ -48,7 +48,7 @@
                     "MYSQL_PASS" :"DHRCdodowa1",
                     "MYSQL_DB" : "ad",
 
-                    "AD_DATA" :" Staff: ldaps://win-ad-1.ucc.edu.gh:636 / 192.168.0.220:636, Student: ldaps://win-stu-ad-1.stu.ucc.edu.gh:636 / 192.168.0.242:636"
+                    "AD_DATA" :" Staff: ldaps://win-ad-1.ucc.edu.gh:636 [ 220,210,221] / 192.168.0.220:636, Student: ldaps://win-stu-ad-1.stu.ucc.edu.gh:636  [242] / 192.168.0.242:636"
                 }
             }  
     ]
