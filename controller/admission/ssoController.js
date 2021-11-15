@@ -58,7 +58,7 @@ module.exports = {
     try{
       var { email } = req.body;
       var user = await SSO.fetchUserByVerb(email)
-      const newphone = cleanPhone(user.phone)
+      const newphone = user.phone ? cleanPhone(user.phone) : null
       const { mail,tag }  = user;
       const otp = digit() // Generate OTP 
       const dt = { access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
