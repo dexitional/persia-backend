@@ -12,7 +12,7 @@
                     "AD1_USER" : "ebenezer.ackah@ucc.edu.gh",
                     "AD1_PASS" : "p@ssw0rd1234",
 
-                    "AD2_HOST" : "ldaps://192.168.0.242:636",
+                    "AD2_HOST" : "ldaps://stu.ucc.edu.gh:636",
                     "AD2_USER" : "ekbackah@stu.ucc.edu.gh",
                     "AD2_PASS" : "p@ssw0rd1234",
 
@@ -34,7 +34,7 @@
                     "AD1_USER" : "ebenezer.ackah@ucc.edu.gh",
                     "AD1_PASS" : "p@ssw0rd1234",
 
-                    "AD2_HOST" : "ldaps://192.168.0.242:636",
+                    "AD2_HOST" : "ldaps://stu.ucc.edu.gh:636",
                     "AD2_USER" : "ekbackah@stu.ucc.edu.gh",
                     "AD2_PASS" : "p@ssw0rd1234",
 

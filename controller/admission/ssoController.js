@@ -184,7 +184,6 @@ module.exports = {
             }else{
               res.status(200).json({ success:false, data: null, msg:"Something wrong happened!" });
             }
-
          }else{
            res.status(200).json({ success:false, data: null, msg:"User does not exist!" });
          }
@@ -227,7 +226,7 @@ module.exports = {
         const ad_location = parseInt(sdata.user.gid) == 1 ? 'students':'staff'
         const userName = sdata.user.mail.split('@')[0]
         const ad_data = { mail:sdata.user.mail,password,userName,commonName:`${sdata.user.name}`,firstName:sdata.user.fname,lastName:sdata.user.lname,email:sdata.user.mail,title:sdata.user.tag,location:ad_location,objectClass: ["top", "person", "organizationalPerson", "user"],phone:sdata.user.phone,email:sdata.user.mail,passwordExpires:false,enabled:true,description:sdata.user.descriptor,unit:sdata.user.unitname}
-        const gs_data = { mail:sdata.user.mail,password,commonName:`${sdata.user.name}`,firstName:sdata.user.fname,lastName:sdata.user.lname,email:sdata.user.mail,title:sdata.user.tag,location:ad_location,phone: sdata.user.phone,email:sdata.user.mail,description:sdata.user.descriptor,unit:sdata.user.unitname}
+        const gs_data = { mail:sdata.user.mail,password:dt.password,commonName:`${sdata.user.name}`,firstName:sdata.user.fname,lastName:sdata.user.lname,email:sdata.user.mail,title:sdata.user.tag,location:ad_location,phone: sdata.user.phone,email:sdata.user.mail,description:sdata.user.descriptor,unit:sdata.user.unitname}
         // AD Password Reset
         if(sdata.userdata.flag_ad){
           const sendToAd = await Box.changeAdPwd(ad_data,ad_domain)
@@ -237,7 +236,7 @@ module.exports = {
         }
         // GS Password Reset
         if(sdata.userdata.flag_ad){
-          const sendToGs = await Box.changeGsPwd(ad_data,ad_domain)
+          const sendToGs = await Box.changeGsPwd(gs_data)
         }else{
           const sendToGs = await Box.insertGsUser(gs_data)
           if(sendToAd) sdata.userdata.flag_gs = 1
