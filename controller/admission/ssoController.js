@@ -239,7 +239,7 @@ module.exports = {
           const sendToGs = await Box.changeGsPwd(gs_data)
         }else{
           const sendToGs = await Box.insertGsUser(gs_data)
-          if(sendToAd) sdata.userdata.flag_gs = 1
+          if(sendToGs) sdata.userdata.flag_gs = 1
         }
       }
       
