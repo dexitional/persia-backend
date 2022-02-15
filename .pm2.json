@@ -1,13 +1,13 @@
 {
     "apps" : [
             {
-                "name": "persia",
+                "name": "ehub",
                 "script": "index.js",
                 "watch": true,
                 "ignore_watch" : ["node_modules", "public","config","views"],
                 "env": {
                     "PORT": 5020,
-                    "NODE_ENV": "development",
+                    "NODE_ENV" : "development",
                     "AD1_HOST" : "ldaps://ucc.edu.gh:636",
                     "AD1_USER" : "ebenezer.ackah@ucc.edu.gh",
                     "AD1_PASS" : "p@ssw0rd1234",
@@ -42,11 +42,11 @@
                     "AD3_USER" : "fred@mis.dev",
                     "AD3_PASS" : "DHRCdodowa1",
 
-                    "MYSQL_HOST" :"192.168.0.10",
+                    "MYSQL_HOST" :"192.168.0.28",
                     "MYSQL_PORT" : 3306,
                     "MYSQL_USER" :"ekbackah",
-                    "MYSQL_PASS" :"DHRCdodowa1",
-                    "MYSQL_DB" : "ad",
+                    "MYSQL_PASS" :"o$%^Ab$@c296O60dF42$C&e959*!dc$$&e1bD36@3o48!",
+                    "MYSQL_DB" : "ehub_alumni",
 
                     "AD_DATA" :" Staff: ldaps://win-ad-1.ucc.edu.gh:636 [ 220,210,221] / 192.168.0.220:636, Student: ldaps://win-stu-ad-1.stu.ucc.edu.gh:636  [242] / 192.168.0.242:636"
                 }

@@ -12,19 +12,18 @@ const sms = require('../../config/sms')
 const db = require('../../config/mysql')
 
 const { SSO } = require('../../model/mysql/ssoModel');
-const { Admission } = require('../../model/mysql/admissionModel');
 const { Student } = require('../../model/mysql/studentModel');
 const { cleanPhone } = require('../../middleware/util');
 const { Box } = require('../../model/mysql/boxModel');
-const { exit } = require('process');
-
 
 module.exports = {
  
   authenticateUser : async (req,res) => {
       const { username,password } = req.body;
+      console.log(req.body)
       try{
             var user = await SSO.verifyUser({username,password});
+            console.log(user)
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
                 var photo = await SSO.fetchPhoto(user[0].uid); // Photo
@@ -396,26 +395,182 @@ stageAccount : async (req,res) => {
   }
 },
 
-generateMail : async (req,res) => {
+
+
+
+/*
+
+  @ Controllers
+
+*/
+
+
+
+// HRStaff  - HRS
+
+fetchHRStaffDataHRS : async (req,res) => {
   try{
-      const { refno } = req.params;
-      var resp = await Student.fetchStProfile(refno);
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      
+      var staff = await SSO.fetchHRStaff(page,keyword);
+     
+      if(staff && staff.data.length > 0){
+        res.status(200).json({success:true, data:staff});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+fetchActiveStListHRS : async (req,res) => {
+  try{
+      var sts = await SSO.fetchActiveStListHRS();
+      if(sts && sts.length > 0){
+        res.status(200).json({success:true, data:sts});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+}, 
+
+fetchHRStaffHRS : async (req,res) => {
+  try{
+      const { sno } = req.params
+      var staff = await SSO.fetchStaffProfile(sno);
+      if(staff && staff.length > 0){
+        res.status(200).json({success:true, data:staff[0]});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+
+postHRStaffDataHRS : async (req,res) => {
+    const { id } = req.body;
+    //let dt = {narrative:req.body.narrative,tag:req.body.tag,amount: req.body.amount,currency:req.body.currency,post_type:req.body.post_type,group_code:req.body.group_code}
+    if(req.body.unit_id == '') delete req.body.unit_id
+    if(req.body.job_id == '') delete req.body.job_id  
+    if(req.body.mstatus == '') delete req.body.mstatus  
+    if(req.body.region_id == '') delete req.body.region_id  
+    if(req.body.email == '') delete req.body.email  
+    if(req.body.dob == ''){delete req.body.dob}  
+    else{ req.body.dob = moment(req.body.dob).format('YYYY-MM-DD') }
+    delete req.body.uid;delete req.body.flag_locked;
+    delete req.body.flag_disabled;delete req.body.unit_name;
+    delete req.body.designation;delete req.body.name;
+    delete req.body.first_appoint;delete req.body.pnit_id;
+    delete req.body.scale_id;delete req.body.updated_at;
+    delete req.body.created_at
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        const sno = await SSO.getNewStaffNo()
+        req.body.staff_no = sno
+        resp = await SSO.insertHRStaff(req.body)
+
+      }else{
+        resp = await SSO.updateHRStaff(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRStaffDataHRS : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRStaff(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+resetAccountHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      const pwd = nanoid()
+      var resp = await SSO.fetchStaffProfile(staff_no);
+      const ups = await SSO.updateUserByEmail(resp[0].inst_mail,{password:sha1(pwd)})
+      const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+      const sm = sms(resp[0].phone,msg)
+      if(ups){
+          res.status(200).json({success:true, data:msg});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+stageAccountHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      const pwd = nanoid()
+      var resp = await SSO.fetchStaffProfile(staff_no);
       console.log(resp)
+      if(resp && resp.length > 0){
+         if(resp[0].inst_mail && resp[0].phone){
+            const ups = await SSO.insertSSOUser({username:resp[0].inst_mail,password:sha1(pwd),group_id:2,tag:staff_no})
+            if(ups){
+                const role = await SSO.insertSSORole({uid:ups.insertId,arole_id:11}) // Unit Staff Role
+                const pic = await SSO.insertPhoto(ups.insertId,staff_no,2,'./public/cdn/photo/none.png')   // Initial Photo 
+                const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+                const sm = sms(resp[0].phone,msg)
+                res.status(200).json({success:true, data:msg});
+            }else{
+                res.status(200).json({success:false, data: null, msg:"Action failed!"});
+            }
+         }else{
+            res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
+         }
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+generateMailHRS : async (req,res) => {
+  try{
+      const { staff_no } = req.params;
+      var resp = await SSO.fetchStaffProfile(staff_no);
       var ups;
       var email;
       
       if(resp && resp.length > 0){
           const username = getUsername(resp[0].fname,resp[0].lname)
-          email = `${username}@st.aucc.edu.gh`
-          const isExist = await Student.findEmail(email)
-          console.log(email)
-          console.log(isExist)
-          if(isExist && isExist.length > 0){
-            email = `${username}${isExist.length+1}@st.aucc.edu.gh`
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email })
-          }else{
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
-          }
+          email = `${username}@aucc.edu.gh`
+          const isExist = await SSO.findEmail(email)
+          if(isExist && isExist.length > 0) email = `${username}${isExist.length+1}@aucc.edu.gh`
+          ups = await SSO.updateStaffProfile(staff_no,{ inst_mail:email })
       }
      
       if(ups){
@@ -429,94 +584,6 @@ generateMail : async (req,res) => {
   }
 },
 
-
-
-recoverVoucher : async (req,res) => {
-  try{
-    const { serial,email,phone } = req.body;
-    console.log(req.body)
-    var resp
-    if(serial && email){ 
-       const sr = await SSO.fetchVoucherBySerial(serial);
-       if(sr && sr.length > 0){
-         const ms = { title: "AUCC VOUCHER", message : `Your recovered voucher details are: [ SERIAL: ${serial}, PIN: ${sr[0].pin} ]` }
-         mailer(email.trim(),ms.title,ms.message)
-         resp = sr;
-       }
-    }else if(phone){
-       const sr = await SSO.fetchVoucherByPhone(phone);
-       console.log(phone)
-       if(sr && sr.length > 0){
-         const message = `Hello! voucher for ${sr[0].applicant_name} is : ( SERIAL: ${sr[0].serial} PIN: ${sr[0].pin} )`;
-         sms(phone,message)
-         resp = sr;
-       }
-    }
-
-    if(resp){
-      res.status(200).json({success:true, data:resp});
-    }else{
-      res.status(200).json({success:false, data: null, msg:"INVALID VOUCHER INFO PROVIDED !"});
-    }
-  }catch(e){
-    console.log(e)
-    res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
-  }
-},
-
-
-
-generateIndexNo : async (req,res) => {
-  try{
-      const refno = req.body.refno;
-      var indexNo = await SSO.generateIndexNo(refno);
-      var resp = await Student.fetchStProfile(refno);
-      var ups;
-      var email;
-      
-      if(resp && resp.length > 0){
-          const username = getUsername(resp[0].fname,resp[0].lname)
-          email = `${username}@st.aucc.edu.gh`
-          const isExist = await Student.findEmail(email)
-          if(isExist && isExist.length > 0){
-            email = `${username}${isExist.length+1}@st.aucc.edu.gh`
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email })
-          }else{
-            ups = await Student.updateStudentProfile(refno,{ institute_email:email }) 
-          }
-      }
-      
-      if(indexNo && email){
-        res.status(200).json({success:true, data: { indexno: indexNo, email }});
-      }else{
-        res.status(200).json({success:false, data: null, msg:"No records!"});
-      }
-  }catch(e){
-      console.log(e)
-      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
-  }
-},
-
-resetAccountHRS : async (req,res) => {
-  try{
-      const { staff_no } = req.params;
-      const pwd = nanoid()
-      var resp = await SSO.fetchStaffProfile(staff_no);
-      const ups = await SSO.updateUserByEmail(resp[0].inst_mail,{password:sha1(pwd)})
-      const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access eHub Portal!`
-      const sm = sms(resp[0].phone,msg)
-      if(ups){
-          res.status(200).json({success:true, data:msg});
-      }else{
-          res.status(200).json({success:false, data: null, msg:"Action failed!"});
-      }
-  }catch(e){
-      console.log(e)
-      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
-  }
-},
-
-
 upgradeRole : async (req,res) => {
   try{
       const { uid,role } = req.params;
@@ -525,7 +592,7 @@ upgradeRole : async (req,res) => {
       if(resp && resp.length > 0){
         if(resp[0].phone){
           const roles = await SSO.insertSSORole({uid,arole_id:role}) // Unit Staff Role
-          const msg = `Hi ${resp.lname}! Your privilege on UCC eHub has been upgraded. Goto https://ehub.ucc.edu.gh to access portal!`
+          const msg = `Hi ${resp.lname}! Your privilege on AUCC EduHub has been upgraded. Goto https://portal.aucc.edu.gh to access portal!`
           if(roles){
             const send = await sms(resp[0].phone,msg)
             console.log(send)
@@ -553,7 +620,7 @@ revokeRole : async (req,res) => {
       if(resp && resp.length > 0){
         if(resp[0].phone){
           const roles = await SSO.deleteSSORole(uid,role) 
-          const msg = `Hi ${resp.lname}! A privilege on UCC eHub has been revoked. Goto https://ehub.ucc.edu.gh to access portal!`
+          const msg = `Hi ${resp.lname}! A privilege on AUCC EduHub has been revoked. Goto https://portal.aucc.edu.gh to access portal!`
           if(roles){
              const send = await sms(resp[0].phone,msg)
              console.log(send)
@@ -564,6 +631,129 @@ revokeRole : async (req,res) => {
         }
       }else{
         res.status(200).json({success:false, data: null, msg:"User not found!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+
+// HRStaff  - HRS
+
+fetchHRUnitDataHRS : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var staff = await SSO.fetchHRUnit(page,keyword);
+      if(staff && staff.data.length > 0){
+        res.status(200).json({success:true, data:staff});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postHRUnitDataHRS : async (req,res) => {
+    const { id } = req.body;
+    if(req.body.lev1_id == '') req.body.lev1_id = null
+    if(req.body.lev2_id == '') req.body.lev2_id = null
+    if(req.body.lev3_id == '') req.body.lev3_id = null
+    if(req.body.head == '') req.body.head = null
+    delete req.body.head_name;delete req.body.head_no;
+    delete req.body.parent;delete req.body.school;
+    delete req.body.subhead;
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        resp = await SSO.insertHRUnit(req.body)
+      }else{
+        resp = await SSO.updateHRUnit(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRUnitDataHRS : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRStaff(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+// HRJOB  - HRS
+fetchHRJobData : async (req,res) => {
+  try{
+      const page = req.query.page;
+      const keyword = req.query.keyword;
+      var jobs = await SSO.fetchHRJob(page,keyword);
+      console.log(jobs)
+      if(jobs && jobs.data.length > 0){
+        res.status(200).json({success:true, data:jobs});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"No records!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something went wrong !"});
+  }
+},
+
+
+postHRJobData : async (req,res) => {
+    const { id } = req.body;
+    //if(req.body.lev1_id == '') req.body.lev1_id = null
+    //delete req.body.subhead;
+    console.log(req.body)
+    try{
+      var resp;
+      if(id <= 0){
+        resp = await SSO.insertHRJob(req.body)
+      }else{
+        resp = await SSO.updateHRJob(id,req.body)
+      }
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+deleteHRJobData : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.deleteHRJob(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
       }
   }catch(e){
       console.log(e)
@@ -614,6 +804,8 @@ fetchAMShelpers : async (req,res) => {
     res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
   }
 },
+
+
 
 
 

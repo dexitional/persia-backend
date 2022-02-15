@@ -25,4 +25,36 @@ Router.get('/reset/stageusers', SSOController.stageusers);
 Router.get('/reset/testsms', SSOController.testsms);
 
 
+/* HRS MODULE ROUTES */
+
+// HR Staff routes
+Router.get('/hrs/hrstaff/', SSOController.fetchHRStaffDataHRS);
+Router.post('/hrs/hrstaff', SSOController.postHRStaffDataHRS);
+Router.get('/hrs/stactive', SSOController.fetchActiveStListHRS);
+Router.delete('/hrs/hrstaff/:id', SSOController.deleteHRStaffDataHRS);
+Router.get('/hrs/hrstaff/:sno', SSOController.fetchHRStaffHRS);
+Router.get('/hrs/resetpwd/:staff_no', SSOController.resetAccountHRS);
+Router.get('/hrs/genmail/:staff_no', SSOController.generateMailHRS);
+Router.get('/hrs/setupaccess/:staff_no', SSOController.stageAccountHRS);
+Router.get('/hrs/upgraderole/:uid/:role', SSOController.upgradeRole);
+Router.get('/hrs/revokerole/:uid/:role', SSOController.revokeRole);
+
+// HR Unit routes
+Router.get('/hrs/hrunit/', SSOController.fetchHRUnitDataHRS);
+Router.post('/hrs/hrunit', SSOController.postHRUnitDataHRS);
+Router.delete('/hrs/hrunit/:id', SSOController.deleteHRUnitDataHRS);
+
+// HR Job routes
+Router.get('/hrs/hrsjob/', SSOController.fetchHRJobData);
+Router.post('/hrs/hrsjob', SSOController.postHRJobData);
+Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
+
+/* HELPERS */
+Router.get('/hrs/helpers', SSOController.fetchHRShelpers);
+Router.get('/fms/helpers', SSOController.fetchFMShelpers);
+Router.get('/ais/helpers', SSOController.fetchAIShelpers);
+Router.get('/ams/helpers', SSOController.fetchAMShelpers);
+
+
+
 module.exports = Router;
