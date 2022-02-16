@@ -102,7 +102,7 @@ module.exports.SSO = {
         case '01': // Student
            sql = "select s.*,p.short as program_name,m.title as major_name,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name, x.title as session_name,x.academic_year as session_year,x.academic_sem as session_semester,x.id as session_id,x.cal_register_start,x.cal_register_end from ehub_identity.user u left join ais.student s on u.tag = s.refno left join ehub_utility.program p on s.prog_id = p.id left join ais.major m on s.major_id = m.id left join ehub_utility.session x on x.mode_id = p.mode_id where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from ehub_identity.user u left join ehub_ehub_hrs.staff s on u.tag = s.staff_no left join ehub_ehub_hrs.job j on j.id = s.job_id left join ehub_utility.unit x on s.unit_id = x.id left join ehub_utility.region r on r.id = s.region_id left join ehub_utility.country c on c.id = s.country_id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from ehub_identity.user u left join ehub_hrs.staff s on u.tag = s.staff_no left join ehub_hrs.job j on j.id = s.job_id left join ehub_utility.unit x on s.unit_id = x.id left join ehub_utility.region r on r.id = s.region_id left join ehub_utility.country c on c.id = s.country_id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from ehub_identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
@@ -306,7 +306,7 @@ module.exports.SSO = {
    getNewStaffNo : async () => {
       const res = await db.query("select staff_no+1 as staff_no from ehub_hrs.staff where staff_no not in ('15666','16000') order by staff_no desc limit 1");
       if(res && res.length > 0) return res[0].staff_no;
-      return null;
+      return 1000;
    },
 
    fetchStaffProfile : async (staff_no) => {

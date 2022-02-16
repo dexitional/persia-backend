@@ -478,8 +478,10 @@ postHRStaffDataHRS : async (req,res) => {
     try{
       var resp;
       if(id <= 0){
-        const sno = await SSO.getNewStaffNo()
-        req.body.staff_no = sno
+        if(req.body.staff_no == ''){
+           const sno = await SSO.getNewStaffNo()
+           req.body.staff_no = sno
+        }
         resp = await SSO.insertHRStaff(req.body)
 
       }else{
