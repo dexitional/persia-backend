@@ -12,10 +12,13 @@ var SSOController = require('../controller/admission/ssoController');
 
 /* SSO User Photo */
 Router.get('/photos', SSOController.fetchPhoto);
+Router.get('/photos/evs', SSOController.fetchEvsPhoto);
 Router.post('/ssophoto', SSOController.postPhoto);
 
 /* SSO Authentication */
 Router.post('/auth/sso', SSOController.authenticateUser);
+Router.post('/auth/google', SSOController.authenticateGoogle);
+
 
 /* SSO Reset */
 Router.post('/reset/sendotp', SSOController.sendOtp);
@@ -48,6 +51,14 @@ Router.delete('/hrs/hrunit/:id', SSOController.deleteHRUnitDataHRS);
 Router.get('/hrs/hrsjob/', SSOController.fetchHRJobData);
 Router.post('/hrs/hrsjob', SSOController.postHRJobData);
 Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
+
+/* EVS MODULE ROUTES */
+Router.get('/evs/data/:id', SSOController.fetchEvsData);
+Router.post('/evs/data', SSOController.postEvsData);
+Router.get('/evs/monitor/:id', SSOController.fetchEvsMonitor);
+Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
+
+
 
 /* HELPERS */
 Router.get('/hrs/helpers', SSOController.fetchHRShelpers);

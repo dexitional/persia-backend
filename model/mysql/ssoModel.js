@@ -3,6 +3,7 @@ var db = require('../../config/mysql');
 const { getUsername } = require('../../middleware/util');
 const { Box } = require('./boxModel');
 
+
 module.exports.SSO = {
    
    verifyUser : async ({username,password}) => {
@@ -64,6 +65,20 @@ module.exports.SSO = {
    },
    
    
+   fetchEvsRoles : async (tag) => {
+      var roles = [];
+      // Electoral Roles
+      var sql = "select *,JSON_SEARCH(voters_whitelist, 'all', '16000') as voter,find_in_set('"+tag+"',ec_admins) as ec,find_in_set('"+tag+"',ec_agents) as agent from ehub_vote.election where (json_search(voters_whitelist, 'one', '"+tag+"') is not null or find_in_set('"+tag+"',ec_admins) > 0 or find_in_set('"+tag+"',ec_agents) > 0) and live_status = 1";
+      var res = await db.query(sql);
+      if(res && res.length > 0){
+         for(var r of res){
+            if(r.ec) roles.push({ role_id:9, role_name:'ELECTORAL ADMIN', role_desc:'Electa Administrator', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
+            else if(r.agent) roles.push({ role_id:10, role_name:'ELECTORAL AGENT', role_desc:'Electa Agent', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
+            else if(r.voter) roles.push({ role_id:11, role_name:'ELECTORAL VOTER', role_desc:'Electa Voter', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
+         }
+      } 
+      return roles;
+   },
 
    fetchRoles : async (uid) => {
       const sql = "select u.arole_id,a.role_name,a.role_desc,x.app_name,x.app_tag from ehub_identity.user_role u left join ehub_identity.app_role a on u.arole_id = a.arole_id left join ehub_identity.app x on a.app_id = x.app_id where u.uid = "+uid;
@@ -74,6 +89,17 @@ module.exports.SSO = {
    fetchPhoto : async (uid) => {
       //const sql = "select p.tag,p.path from ehub_identity.photo p where p.uid = '"+uid+"' or p.tag = '"+uid+"'";
       const sql = "select p.tag,p.path from ehub_identity.photo p where p.tag = '"+uid+"'";
+      const res = await db.query(sql);
+      return res;
+   },
+
+   fetchEvsPhoto : async (tag,eid) => {
+      var sql;
+      if(tag == 'logo'){
+        sql = "select logo as path from ehub_vote.election where id = "+eid;
+      }else{
+        sql = "select photo as path from ehub_vote.candidate where id = "+eid;
+      }
       const res = await db.query(sql);
       return res;
    },
@@ -416,6 +442,77 @@ module.exports.SSO = {
       var res = await db.query("delete from ehub_hrs.job where id = "+id);
       return res;
    },
+
+
+   // EVS MODELS
+
+   fetchEvsData : async (id) => {
+      var data = { }
+      // Portfolio data
+      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      if(res && res.length > 0) data.portfolios = res;
+      // Candidate data
+      var res = await db.query("select c.*,p.name as portfolio,p.id as pid from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id);
+      if(res && res.length > 0) data.candidates = res;
+      // Election data
+      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      if(res && res.length > 0) data.election = res;
+
+      return data;
+   },
+
+   fetchEvsMonitor : async (id) => {
+      var data = { }
+      // Portfolio data
+      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      if(res && res.length > 0) data.portfolios = res;
+      // Candidate data
+      var res = await db.query("select c.*,p.name as portfolio from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id);
+      if(res && res.length > 0) data.candidates = res;
+      // Election data
+      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      if(res && res.length > 0) data.election = res;
+      // Voters data
+      var res = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      if(res && res.length > 0) data.electors = res;
+
+      return data;
+   },
+
+
+   postEvsData : async (data) => {
+      const { id,tag,votes,name } = data;
+      
+      // Get Portfolio count & Verify whether equal to data posted
+      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      console.log(res)
+      if(res && res.length > 0) {
+         const count = res.length;
+         var vt = await db.query("select * from ehub_vote.elector where trim(tag) = '"+tag+"'");
+         console.log(vt)
+         if(vt && vt.length <= 0){
+            if(count == Object.values(votes).length){
+               // Insert Into Elector Database
+               const dm = { vote_status: 1, vote_sum: Object.values(votes).join(','), vote_time:new Date(), name, tag, election_id:id }
+               const ins = await db.query("insert into ehub_vote.elector set ?",dm);
+               console.log(ins, Object.values(votes).join(','))
+               if(ins && ins.insertId > 0) return { success: true, msg: 'Voted successfully'}
+               return { success: false, msg: 'Votes not saved'}
+            }else{
+               // Votes Not Received
+               return { success: false, msg: 'Votes partially received'}
+            }
+            
+         }else{
+            // Voted Already
+            return { success: false, msg: 'Elector already voted'}
+         }
+     
+      }else{
+         return { success: false, msg: 'Portfolio not found'}
+      }
+   },
+
 
 
 

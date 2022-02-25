@@ -27,9 +27,10 @@ module.exports = {
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
                 var photo = await SSO.fetchPhoto(user[0].uid); // Photo
+                var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
-                var data = { roles, photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
@@ -46,6 +47,50 @@ module.exports = {
       }catch(e){
           console.log(e)
           const lgs = await await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
+          console.log(lgs)
+          res.status(200).json({success:false, data: null, msg: "System error detected."});
+      }
+  },
+
+  authenticateGoogle: async (req,res) => {
+      const { name,email } = req.body;
+      const pwd = nanoid();
+      console.log(req.body)
+      try{
+
+              var user = await SSO.fetchUserByVerb(email);
+              console.log(user)
+              if(user){
+                const ups = await SSO.insertSSOUser({ username:email,password:sha1(pwd),group_id:user.gid,tag:user.tag})
+                if(ups){
+                    const uid = ups.insertId;
+                    const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/photo/none.png')
+                    //const msg = `Hi, your username: ${email} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access Other UCC Portal Services!`
+                    //const sm = sms(user.phone,msg)
+                    var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
+                    var userdata = await SSO.fetchUser(uid,user.gid); // UserData
+                    userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
+                    var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                    // Generate Session Token 
+                    const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
+                    data.token = token;
+                    // Log Activity
+                    const lgs = await SSO.logger(uid,'LOGIN_SUCCESS',{email}) // Log Activity
+                    return res.status(200).json({success:true, data});
+                }else{
+                  res.status(200).json({success:false, data: null, msg:"Couldnt stage SSO Account!"});
+                }
+               
+                
+
+            }else{
+                const lgs = await SSO.logger(0,'LOGIN_FAILED',{email}) // Log Activity
+                console.log(lgs)
+                res.status(200).json({success:false, data: null, msg:"Invalid username or password!"});
+            }
+      }catch(e){
+          console.log(e)
+          const lgs = await await SSO.logger(0,'LOGIN_ERROR',{email,error:e}) // Log Activity
           console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
@@ -312,14 +357,14 @@ module.exports = {
   },
 
   
-  fetchPhoto : async (req,res) => {
+  fetchEvsPhoto : async (req,res) => {
       const tag = req.query.tag;
-      var pic = await SSO.fetchPhoto(tag); // Photo
+      const eid = req.query.eid;
+      var pic = await SSO.fetchEvsPhoto(tag,eid); // Photo
       if(pic.length > 0){
           var filepath = path.join(__dirname,'/../../', pic[0].path);
           try{
             var stats = fs.statSync(filepath);
-            console.log(stats);
             if(stats){
               res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
             }else{
@@ -333,6 +378,28 @@ module.exports = {
           res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
       }
   },
+
+  fetchPhoto : async (req,res) => {
+    const tag = req.query.tag;
+    var pic = await SSO.fetchPhoto(tag); // Photo
+    if(pic.length > 0){
+        var filepath = path.join(__dirname,'/../../', pic[0].path);
+        try{
+          var stats = fs.statSync(filepath);
+          console.log(stats);
+          if(stats){
+            res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
+          }else{
+            res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+          } 
+        }catch(e){
+           console.log(e);
+           res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+        }
+    }else{
+        res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+    }
+},
 
   postPhoto : async (req,res) => {
       const { tag,group_id,lock } = req.body;
@@ -763,6 +830,51 @@ deleteHRJobData : async (req,res) => {
   }
 },
 
+
+
+// EVS ROUTES */
+
+fetchEvsData : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.fetchEvsData(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+postEvsData : async (req,res) => {
+    try{
+      var resp = await SSO.postEvsData(req.body)
+      res.status(200).json(resp);
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+
+fetchEvsMonitor : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.fetchEvsMonitor(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
 
 // HELPERS 
 
