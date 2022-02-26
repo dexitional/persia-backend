@@ -53,35 +53,52 @@ module.exports = {
   },
 
   authenticateGoogle: async (req,res) => {
-      const { name,email } = req.body;
+      const { email } = req.body;
       const pwd = nanoid();
-      console.log(req.body)
       try{
 
               var user = await SSO.fetchUserByVerb(email);
               console.log(user)
               if(user){
-                const ups = await SSO.insertSSOUser({ username:email,password:sha1(pwd),group_id:user.gid,tag:user.tag})
-                if(ups){
-                    const uid = ups.insertId;
-                    const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/photo/none.png')
-                    //const msg = `Hi, your username: ${email} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access Other UCC Portal Services!`
-                    //const sm = sms(user.phone,msg)
+                const isUser = await SSO.fetchSSOUser(user.tag);
+                if(isUser && isUser.length > 0){
+                    // SSO USER EXISTS
+                    const uid = isUser[0].uid;
+                    var roles = await SSO.fetchRoles(uid); // Roles
+                    var photo = await SSO.fetchPhoto(uid); // Photo
                     var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                     var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                     userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                    var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                    var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
                     // Generate Session Token 
                     const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                     data.token = token;
                     // Log Activity
-                    const lgs = await SSO.logger(uid,'LOGIN_SUCCESS',{email}) // Log Activity
-                    return res.status(200).json({success:true, data});
+                    const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{email}) // Log Activity
+                    res.status(200).json({success:true, data});
+
                 }else{
-                  res.status(200).json({success:false, data: null, msg:"Couldnt stage SSO Account!"});
+                    // SSO USER NOT STAGED
+                    const ups = await SSO.insertSSOUser({ username:email,password:sha1(pwd),group_id:user.gid,tag:user.tag})
+                    if(ups){
+                        const uid = ups.insertId;
+                        const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/photo/none.png')
+                        //const msg = `Hi, your username: ${email} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access Other UCC Portal Services!`
+                        //const sm = sms(user.phone,msg)
+                        var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
+                        var userdata = await SSO.fetchUser(uid,user.gid); // UserData
+                        userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
+                        var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                        // Generate Session Token 
+                        const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
+                        data.token = token;
+                        // Log Activity
+                        const lgs = await SSO.logger(uid,'LOGIN_SUCCESS',{email}) // Log Activity
+                        return res.status(200).json({success:true, data});
+                    }else{
+                      res.status(200).json({success:false, data: null, msg:"Couldnt stage SSO Account!"});
+                    }
                 }
-               
-                
 
             }else{
                 const lgs = await SSO.logger(0,'LOGIN_FAILED',{email}) // Log Activity
