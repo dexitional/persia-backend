@@ -74,7 +74,7 @@ module.exports = {
                     const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                     data.token = token;
                     // Log Activity
-                    const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{email}) // Log Activity
+                    const lgs = await SSO.logger(uid,'LOGIN_SUCCESS',{email}) // Log Activity
                     res.status(200).json({success:true, data});
 
                 }else{
