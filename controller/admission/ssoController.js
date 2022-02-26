@@ -853,8 +853,8 @@ deleteHRJobData : async (req,res) => {
 
 fetchEvsData : async (req,res) => {
   try{
-      const { id } = req.params;
-      var resp = await SSO.fetchEvsData(id);
+      const { id,tag } = req.params;
+      var resp = await SSO.fetchEvsData(id,tag);
       if(resp){
           res.status(200).json({success:true, data:resp});
       }else{

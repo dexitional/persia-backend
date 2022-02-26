@@ -2,7 +2,7 @@ const moment =  require('moment');
 var db = require('../../config/mysql');
 const { getUsername } = require('../../middleware/util');
 const { Box } = require('./boxModel');
-
+var fs = require('fs');
 
 module.exports.SSO = {
    
@@ -68,7 +68,8 @@ module.exports.SSO = {
    fetchEvsRoles : async (tag) => {
       var roles = [];
       // Electoral Roles
-      var sql = "select *,JSON_SEARCH(voters_whitelist, 'all', '16000') as voter,find_in_set('"+tag+"',ec_admins) as ec,find_in_set('"+tag+"',ec_agents) as agent from ehub_vote.election where (json_search(voters_whitelist, 'one', '"+tag+"') is not null or find_in_set('"+tag+"',ec_admins) > 0 or find_in_set('"+tag+"',ec_agents) > 0) and live_status = 1";
+      var sql = "select e.*,v.vote_time,v.vote_status,v.vote_sum,JSON_SEARCH(e.voters_whitelist, 'all', "+tag+") as voter,find_in_set('"+tag+"',e.ec_admins) as ec,find_in_set('"+tag+"',e.ec_agents) as agent from ehub_vote.election e left join ehub_vote.elector v on (e.id = v.election_id and v.tag = '"+tag+"') where (json_search(e.voters_whitelist, 'one', "+tag+") is not null or find_in_set('"+tag+"',ec_admins) > 0 or find_in_set('"+tag+"',ec_agents) > 0) and e.live_status = 1";
+      console.log(sql)
       var res = await db.query(sql);
       if(res && res.length > 0){
          for(var r of res){
@@ -77,6 +78,13 @@ module.exports.SSO = {
             else if(r.voter) roles.push({ role_id:11, role_name:'ELECTORAL VOTER', role_desc:'Electa Voter', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
          }
       } 
+      /*
+      const mx = md.map( r => `${r}`)
+      fs.writeFile('utag.json',JSON.stringify(mx), function (err) {
+         if (err) throw err;
+         console.log('File is created successfully.');
+      });
+      */
       return roles;
    },
 
@@ -152,13 +160,13 @@ module.exports.SSO = {
         case '01': // Student
            sql = "select s.*,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_email as mail,s.regno as tag,s.cellphone as phone,'01' as gid,p.short_name as program_name,d.short_name as unitname from ehub_identity.user u left join osis.students_db s on u.tag = s.regno left join osis.prog_db p on s.progid = p.progid left join osis.departments d on d.deptid = p.deptid where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.staff_no as tag,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from ehub_identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
            sql = "select from ehub_identity.photo p where p.uid = "+uid; break;
         case '05': // Alumni
-           sql = "select from ehub_alumni.member p where p.refno = "+uid; break;
+           sql = "select *, p.refno as tag from ehub_alumni.member p where p.refno = "+uid; break;
         default :  // Staff
            sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
       } const res = await db.query(sql);
@@ -471,7 +479,7 @@ module.exports.SSO = {
 
    // EVS MODELS
 
-   fetchEvsData : async (id) => {
+   fetchEvsData : async (id,tag) => {
       var data = { }
       // Portfolio data
       var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
@@ -480,7 +488,7 @@ module.exports.SSO = {
       var res = await db.query("select c.*,p.name as portfolio,p.id as pid from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id);
       if(res && res.length > 0) data.candidates = res;
       // Election data
-      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      var res = await db.query("select e.*,v.vote_status,vote_time,vote_sum from ehub_vote.election e left join ehub_vote.elector v on e.id = v.election_id where e.id = "+id+" and v.tag = '"+tag+"'");
       if(res && res.length > 0) data.election = res;
 
       return data;
@@ -517,24 +525,39 @@ module.exports.SSO = {
          console.log(vt)
          if(vt && vt.length <= 0){
             if(count == Object.values(votes).length){
+               // Update Candidate Votes Count
+               const vals = Object.values(votes)
+               var update_count = 0;
+               if(vals.length > 0){
+                  for(var val of vals){
+                     const cs = await db.query("select * from ehub_vote.candidate where id = "+val)
+                     if(cs && cs.length> 0){
+                        const vt = cs[0].votes + 1;
+                        const ups = await db.query("update ehub_vote.candidate set votes = "+vt+" where id = "+val)
+                        if(ups.affectedRows > 0) update_count += 1;
+                     }
+                  }
+               }
+
+               if(count != update_count) return { success: false, msg: 'Votes partially recorded', code : 1001 }
+
                // Insert Into Elector Database
                const dm = { vote_status: 1, vote_sum: Object.values(votes).join(','), vote_time:new Date(), name, tag, election_id:id }
                const ins = await db.query("insert into ehub_vote.elector set ?",dm);
-               console.log(ins, Object.values(votes).join(','))
-               if(ins && ins.insertId > 0) return { success: true, msg: 'Voted successfully'}
-               return { success: false, msg: 'Votes not saved'}
+               if(ins && ins.insertId > 0) return { success: true, msg: 'Voted successfully', code: 1000 }
+               return { success: false, msg: 'Votes saved for elector', code: 1002 }
             }else{
                // Votes Not Received
-               return { success: false, msg: 'Votes partially received'}
+               return { success: false, msg: 'Votes partially received', code: 1003 }
             }
             
          }else{
             // Voted Already
-            return { success: false, msg: 'Elector already voted'}
+            return { success: false, msg: 'Elector already voted', code: 1004 }
          }
      
       }else{
-         return { success: false, msg: 'Portfolio not found'}
+         return { success: false, msg: 'Portfolio not found', code: 1005 }
       }
    },
 

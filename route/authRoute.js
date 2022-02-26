@@ -53,7 +53,7 @@ Router.post('/hrs/hrsjob', SSOController.postHRJobData);
 Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
 
 /* EVS MODULE ROUTES */
-Router.get('/evs/data/:id', SSOController.fetchEvsData);
+Router.get('/evs/data/:id/:tag', SSOController.fetchEvsData);
 Router.post('/evs/data', SSOController.postEvsData);
 Router.get('/evs/monitor/:id', SSOController.fetchEvsMonitor);
 Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
