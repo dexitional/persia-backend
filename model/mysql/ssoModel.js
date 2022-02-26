@@ -152,7 +152,7 @@ module.exports.SSO = {
         case '01': // Student
            sql = "select s.*,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_email as mail,s.regno as tag,s.cellphone as phone,'01' as gid,p.short_name as program_name,d.short_name as unitname from ehub_identity.user u left join osis.students_db s on u.tag = s.regno left join osis.prog_db p on s.progid = p.progid left join osis.departments d on d.deptid = p.deptid where x.default = 1 and u.uid = "+uid; break;
         case '02': // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
         case '03': // NSS
            sql = "select from ehub_identity.photo p where p.uid = "+uid; break;
         case '04': // Applicant (Job)
@@ -160,7 +160,7 @@ module.exports.SSO = {
         case '05': // Alumni
            sql = "select from ehub_alumni.member p where p.refno = "+uid; break;
         default :  // Staff
-           sql = "select s.*,j.title as designation,x.title as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,c.title as countryname, r.title as regioname,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
+           sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,u.uid from ehub_identity.user u left join hr.staff s on u.tag = s.staff_no left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where u.uid = "+uid; break;
       } const res = await db.query(sql);
         return res;
    },
