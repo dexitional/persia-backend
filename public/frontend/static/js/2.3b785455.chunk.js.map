@@ -1,1 +1,0 @@
-{"version":3,"sources":["assets/img/logo/cohy/logo_portal.png"],"names":["module","exports","__webpack_require__","p"],"mappings":"6EAAAA,EAAAC,QAAiBC,EAAAC,EAAuB","file":"static/js/2.3b785455.chunk.js","sourcesContent":["module.exports = __webpack_public_path__ + \"static/media/logo_portal.c6fc4da5.png\";"],"sourceRoot":""}

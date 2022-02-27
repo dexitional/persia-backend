@@ -482,14 +482,17 @@ module.exports.SSO = {
    fetchEvsData : async (id,tag) => {
       var data = { }
       // Portfolio data
-      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = "+id);
       if(res && res.length > 0) data.portfolios = res;
       // Candidate data
-      var res = await db.query("select c.*,p.name as portfolio,p.id as pid from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id);
+      var res = await db.query("select c.*,p.name as portfolio,p.id as pid from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where c.status = 1 and p.election_id = "+id);
       if(res && res.length > 0) data.candidates = res;
       // Election data
       var res = await db.query("select e.*,v.vote_status,vote_time,vote_sum from ehub_vote.election e left join ehub_vote.elector v on e.id = v.election_id where e.id = "+id+" and v.tag = '"+tag+"'");
       if(res && res.length > 0) data.election = res;
+      // Voters data
+      var res = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      if(res && res.length > 0) data.electors = res;
 
       return data;
    },
@@ -497,10 +500,10 @@ module.exports.SSO = {
    fetchEvsMonitor : async (id) => {
       var data = { }
       // Portfolio data
-      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = "+id);
       if(res && res.length > 0) data.portfolios = res;
       // Candidate data
-      var res = await db.query("select c.*,p.name as portfolio from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id);
+      var res = await db.query("select c.*,p.name as portfolio from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where c.status = 1 and p.election_id = "+id);
       if(res && res.length > 0) data.candidates = res;
       // Election data
       var res = await db.query("select * from ehub_vote.election where id = "+id);
@@ -517,7 +520,7 @@ module.exports.SSO = {
       const { id,tag,votes,name } = data;
       
       // Get Portfolio count & Verify whether equal to data posted
-      var res = await db.query("select * from ehub_vote.portfolio where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = "+id);
       console.log(res)
       if(res && res.length > 0) {
          const count = res.length;
