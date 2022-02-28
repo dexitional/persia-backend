@@ -521,7 +521,6 @@ module.exports.SSO = {
       
       // Get Portfolio count & Verify whether equal to data posted
       var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = "+id);
-      console.log(res)
       if(res && res.length > 0) {
          const count = res.length;
          var vt = await db.query("select * from ehub_vote.elector where trim(tag) = '"+tag+"'");
@@ -535,15 +534,12 @@ module.exports.SSO = {
                   for(var val of vals){
                      const cs = await db.query("select * from ehub_vote.candidate where id = "+val)
                      if(cs && cs.length> 0){
-                        const vt = cs[0].votes + 1;
-                        const ups = await db.query("update ehub_vote.candidate set votes = "+vt+" where id = "+val)
+                        const ups = await db.query("update ehub_vote.candidate set votes = (votes+1) where id = "+val)
                         if(ups.affectedRows > 0) update_count += 1;
                      }
                   }
                }
-
                if(count != update_count) return { success: false, msg: 'Votes partially recorded', code : 1001 }
-
                // Insert Into Elector Database
                const dm = { vote_status: 1, vote_sum: Object.values(votes).join(','), vote_time:new Date(), name, tag, election_id:id }
                const ins = await db.query("insert into ehub_vote.elector set ?",dm);
