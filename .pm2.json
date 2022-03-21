@@ -47,7 +47,7 @@
 
                     "MYSQL_HOST" :"192.168.0.28",
                     "MYSQL_PORT" : 3306,
-                    "MYSQL_USER" :"ekbackah",
+                    "MYSQL_USER" :"hrms",
                     "MYSQL_PASS" :"o$%^Ab$@c296O60dF42$C&e959*!dc$$&e1bD36@3o48!",
                     "MYSQL_DB" : "ehub_alumni",
 
