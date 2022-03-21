@@ -1,0 +1,1 @@
+{"version":3,"sources":["assets/img/logo/ucc/logo_portal.png"],"names":["module","exports","__webpack_require__","p"],"mappings":"6EAAAA,EAAAC,QAAiBC,EAAAC,EAAuB","file":"static/js/5.ac6356dc.chunk.js","sourcesContent":["module.exports = __webpack_public_path__ + \"static/media/logo_portal.2bc660bc.png\";"],"sourceRoot":""}

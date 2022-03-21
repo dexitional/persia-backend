@@ -66,6 +66,16 @@ const decodeBase64Image = (dataString) => {
   return response;
 }
 
+const rotateImage = async (imageFile) => {
+  const Jimp = require('jimp') ;
+  // Reading Image
+  const image = await Jimp.read(imageFile);
+  // Checking if any error occurs while rotating image
+  image.rotate(90, Jimp.RESIZE_BEZIER, function(err){
+     if (err) throw err;
+  }).write(imageFile);
+}
+
 
 const getSemestersByCode = (group_code) => {
   console.log(group_code)
@@ -92,4 +102,5 @@ const getSemestersByCode = (group_code) => {
 }
 
 
-module.exports = { getTargetGroup,getSemestersByCode,getUsername,cleanPhone,decodeBase64Image }
+
+module.exports = { getTargetGroup,getSemestersByCode,getUsername,cleanPhone,decodeBase64Image,rotateImage }

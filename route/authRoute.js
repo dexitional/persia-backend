@@ -14,6 +14,9 @@ var SSOController = require('../controller/admission/ssoController');
 Router.get('/photos', SSOController.fetchPhoto);
 Router.get('/photos/evs', SSOController.fetchEvsPhoto);
 Router.post('/ssophoto', SSOController.postPhoto);
+Router.post('/rotatephoto', SSOController.rotatePhoto);
+Router.post('/removephoto', SSOController.removePhoto);
+Router.post('/sendphotos', SSOController.sendPhotos);
 
 /* SSO Authentication */
 Router.post('/auth/sso', SSOController.authenticateUser);
@@ -56,6 +59,12 @@ Router.delete('/hrs/hrsjob/:id', SSOController.deleteHRJobData);
 Router.get('/evs/data/:id/:tag', SSOController.fetchEvsData);
 Router.post('/evs/data', SSOController.postEvsData);
 Router.get('/evs/monitor/:id', SSOController.fetchEvsMonitor);
+Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
+
+/* SSO - Identity ROUTES */
+Router.get('/sso/identity', SSOController.fetchSSOIdentity);
+Router.post('/sso/identity', SSOController.postEvsData);
+Router.post('/sso/bulkphoto', SSOController.fetchEvsMonitor);
 Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
 
 

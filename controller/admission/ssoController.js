@@ -10,15 +10,16 @@ const digit = customAlphabet('1234567890', 4)
 const mailer = require('../../config/email')
 const sms = require('../../config/sms')
 const db = require('../../config/mysql')
+const Jimp = require('jimp') ;
 
 const { SSO } = require('../../model/mysql/ssoModel');
 const { Student } = require('../../model/mysql/studentModel');
-const { cleanPhone } = require('../../middleware/util');
+const { cleanPhone,decodeBase64Image, rotateImage } = require('../../middleware/util');
 const { Box } = require('../../model/mysql/boxModel');
 
 module.exports = {
  
-  authenticateUser : async (req,res) => {
+         authenticateUser : async (req,res) => {
       const { username,password } = req.body;
       console.log(req.body)
       try{
@@ -26,11 +27,11 @@ module.exports = {
             console.log(user)
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
-                var photo = await SSO.fetchPhoto(user[0].uid); // Photo
+                const photo  = `${req.protocol}://${req.get('host')}/apis/?tag=${user[0].tag}`
                 var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
-                var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                var data = { roles:[...roles,...evsRoles], photo, user:userdata && userdata[0] };
                 // Generate Session Token 
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
@@ -65,11 +66,11 @@ module.exports = {
                     // SSO USER EXISTS
                     const uid = isUser[0].uid;
                     var roles = await SSO.fetchRoles(uid); // Roles
-                    var photo = await SSO.fetchPhoto(uid); // Photo
+                    const photo  = `${req.protocol}://${req.get('host')}/apis/?tag=${user.tag}`
                     var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                     var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                     userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                    var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/api/photos/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                    var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/apis/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/apis/?tag=00000000`), user:userdata && userdata[0] };
                     // Generate Session Token 
                     const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                     data.token = token;
@@ -82,13 +83,13 @@ module.exports = {
                     const ups = await SSO.insertSSOUser({ username:email,password:sha1(pwd),group_id:user.gid,tag:user.tag})
                     if(ups){
                         const uid = ups.insertId;
-                        const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/photo/none.png')
+                        const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/none.png')
                         //const msg = `Hi, your username: ${email} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access Other UCC Portal Services!`
                         //const sm = sms(user.phone,msg)
                         var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                         var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                         userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                        var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/api/photos/?tag=00000000`), user:userdata && userdata[0] };
+                        var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/apis/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/apis/?tag=00000000`), user:userdata && userdata[0] };
                         // Generate Session Token 
                         const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                         data.token = token;
@@ -385,70 +386,133 @@ module.exports = {
             if(stats){
               res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
             }else{
-              res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+              res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
             } 
           }catch(e){
              console.log(e);
-             res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+             res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
           }
       }else{
-          res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+          res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
       }
   },
 
   fetchPhoto : async (req,res) => {
     const tag = req.query.tag;
-    var pic = await SSO.fetchPhoto(tag); // Photo
-    if(pic.length > 0){
-        var filepath = path.join(__dirname,'/../../', pic[0].path);
-        try{
-          var stats = fs.statSync(filepath);
-          console.log(stats);
-          if(stats){
-            res.status(200).sendFile(path.join(__dirname,'/../../', pic[0].path));
-          }else{
-            res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
-          } 
-        }catch(e){
-           console.log(e);
-           res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+    try { 
+      const bio = await SSO.fetchUserByVerb(tag); // Biodata
+      if(bio){
+        var pic = await SSO.fetchPhoto(tag,bio.gid); // Photo
+        console.log(pic)
+        if(pic){
+          res.status(200).sendFile(pic);
+        }else{
+          res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
         }
-    }else{
-        res.status(200).sendFile(path.join(__dirname, '/../../public/cdn/photo', 'none.png'));
+      }else {
+        res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
+      } 
+    }catch(err){
+      console.log(err)
+      res.status(200).sendFile(path.join(__dirname, '/../../public/cdn', 'none.png'));
     }
-},
+  },
 
   postPhoto : async (req,res) => {
-      const { tag,group_id,lock } = req.body;
-      var mpath;
-      switch(group_id){
-        case '01': mpath = 'student'; break;
-        case '02': mpath = 'staff'; break;
-        case '03': mpath = 'nss'; break;
-        case '04': mpath = 'applicant'; break;
-        case '05': mpath = 'alumni'; break;
-        default: mpath = 'student'; break;
+    var { tag,group_id } = req.body;
+    var imageBuffer = decodeBase64Image(req.body.photo);
+    var spath = `${process.env.CDN_DIR}`;
+    switch(parseInt(group_id)){
+       case 1: spath = `${spath}/student/`; break;
+       case 2: spath = `${spath}/staff/`; break;
+       case 3: spath = `${spath}/nss/`; break;
+       case 4: spath = `${spath}/applicant/`; break;
+       case 5: spath = `${spath}/alumni/`; break;
+       case 6: spath = `${spath}/code/`; break;
+    }
+    tag = tag.toString().replaceAll("/","").trim().toLowerCase();
+    const file = `${spath}${tag}.jpg`;
+    fs.writeFile(file, imageBuffer.data, async function(err) {
+      if(err) {
+        console.log(err)
+        res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
       }
-      var imageBuffer = decodeBase64Image(req.body.photo);
-      const dest = path.join(__dirname, '/../../public/cdn/photo/'+mpath, tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]));
-      const dbpath = './public/cdn/photo/'+mpath+'/'+tag.trim().toLowerCase()+'.'+(imageBuffer.type.split('/')[1]);
-      console.log(`Tag: ${tag}, Group ID: ${group_id}`)
-      fs.writeFile(dest, imageBuffer.data, async function(err) {
-        if(err) res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
-        const ssoUser = await SSO.fetchSSOUser(tag)
-        if(ssoUser.length > 0){
-         
-          const insertData = !ssoUser[0].photo_id ? await SSO.insertPhoto(ssoUser[0].uid,tag,group_id,dbpath) : await SSO.updatePhoto(ssoUser[0].photo_id,dbpath)
-          if(lock){
-            if(group_id == '01'){
-              const slk = await Student.updateStudentProfile(tag,{flag_photo_lock:1})
-            }
-          } 
-          const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}`
-          if(insertData) res.status(200).json({success:true, data:stphoto});
-        }
-      });
-  },
+      const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+      res.status(200).json({success:true, data:stphoto});
+    });
+},
+
+sendPhotos : async (req,res) => {
+  var { tag,group_id } = req.body;
+  var imageBuffer = decodeBase64Image(req.body.photo);
+  var spath = `${process.env.CDN_DIR}`;
+  switch(parseInt(group_id)){
+     case 1: spath = `${spath}/student/`; break;
+     case 2: spath = `${spath}/staff/`; break;
+     case 3: spath = `${spath}/nss/`; break;
+     case 4: spath = `${spath}/applicant/`; break;
+     case 5: spath = `${spath}/alumni/`; break;
+     case 6: spath = `${spath}/code/`; break;
+  }
+  tag = tag.toString().replaceAll("/","").trim().toLowerCase();
+  const file = `${spath}${tag}.jpg`;
+  fs.writeFile(file, imageBuffer.data, async function(err) {
+    if(err) {
+      console.log(err)
+      res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
+    }
+    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    res.status(200).json({success:true, data:stphoto});
+  });
+},
+
+
+rotatePhoto : async (req,res) => {
+  var { tag,group_id } = req.body;
+  var spath = `${process.env.CDN_DIR}`;
+  switch(parseInt(group_id)){
+     case 1: spath = `${spath}/student/`; break;
+     case 2: spath = `${spath}/staff/`; break;
+     case 3: spath = `${spath}/nss/`; break;
+     case 4: spath = `${spath}/applicant/`; break;
+     case 5: spath = `${spath}/alumni/`; break;
+     case 6: spath = `${spath}/code/`; break;
+  }
+  tag = tag.toString().replaceAll("/","").trim().toLowerCase();
+  const file = `${spath}${tag}.jpg`;
+  var stats = fs.statSync(file);
+  if(stats){
+    await rotateImage(file);
+    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    res.status(200).json({success:true, data:stphoto});
+  }else{
+    res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
+  }
+},
+
+
+removePhoto : async (req,res) => {
+  var { tag,group_id } = req.body;
+  var spath = `${process.env.CDN_DIR}`;
+  switch(parseInt(group_id)){
+     case 1: spath = `${spath}/student/`; break;
+     case 2: spath = `${spath}/staff/`; break;
+     case 3: spath = `${spath}/nss/`; break;
+     case 4: spath = `${spath}/applicant/`; break;
+     case 5: spath = `${spath}/alumni/`; break;
+     case 6: spath = `${spath}/code/`; break;
+  }
+  tag = tag.toString().replaceAll("/","").trim().toLowerCase();
+  const file = `${spath}${tag}.jpg`;
+  var stats = fs.statSync(file);
+  if(stats){
+    fs.unlinkSync(file);
+    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    res.status(200).json({success:true, data:stphoto});
+  }else{
+    res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
+  }
+},
 
  
 
@@ -457,17 +521,16 @@ stageAccount : async (req,res) => {
       const { refno } = req.params;
       const pwd = nanoid()
       var resp = await Student.fetchStudentProfile(refno);
-      console.log(resp)
       if(resp && resp.length > 0){
          if(resp[0].institute_email && resp[0].phone){
             const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
             if(ups){
-                const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/photo/none.png')
-                const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
-                const sm = sms(resp[0].phone,msg)
-                res.status(200).json({success:true, data:msg});
+              const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/none.png')
+              const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
+              const sm = sms(resp[0].phone,msg)
+              res.status(200).json({success:true, data:msg});
             }else{
-                res.status(200).json({success:false, data: null, msg:"Action failed!"});
+              res.status(200).json({success:false, data: null, msg:"Action failed!"});
             }
          }else{
             res.status(200).json({success:false, data: null, msg:"Please update Phone or Email!"});
@@ -627,7 +690,7 @@ stageAccountHRS : async (req,res) => {
             const ups = await SSO.insertSSOUser({username:resp[0].inst_mail,password:sha1(pwd),group_id:2,tag:staff_no})
             if(ups){
                 const role = await SSO.insertSSORole({uid:ups.insertId,arole_id:11}) // Unit Staff Role
-                const pic = await SSO.insertPhoto(ups.insertId,staff_no,2,'./public/cdn/photo/none.png')   // Initial Photo 
+                const pic = await SSO.insertPhoto(ups.insertId,staff_no,2,'./public/cdn/none.png')   // Initial Photo 
                 const msg = `Hi, your username: ${resp[0].inst_mail} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
                 const sm = sms(resp[0].phone,msg)
                 res.status(200).json({success:true, data:msg});
@@ -892,6 +955,56 @@ fetchEvsMonitor : async (req,res) => {
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+
+
+
+// SSO - Identity ROUTES */
+
+fetchSSOIdentity : async (req,res) => {
+  try{
+      const { search } = req.query;
+      console.log(search)
+      var resp = await SSO.fetchSSOIdentity(req,search);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+postEvsData : async (req,res) => {
+    try{
+      var resp = await SSO.postEvsData(req.body)
+      res.status(200).json(resp);
+    }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong happened!"});
+    }
+},
+
+
+fetchEvsMonitor : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.fetchEvsMonitor(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
 
 // HELPERS 
 
