@@ -107,12 +107,12 @@ module.exports.SSO = {
    fetchPhoto : async (tag,gid) => {
       var spath = `${process.env.CDN_DIR}`;
       switch(parseInt(gid)){
-         case 1: spath = `${spath}/photo/student/`; break;
-         case 2: spath = `${spath}/photo/staff/`; break;
-         case 3: spath = `${spath}/photo/student/`; break;
-         case 4: spath = `${spath}/photo/student/`; break;
-         case 5: spath = `${spath}/photo/student/`; break;
-         case 6: spath = `${spath}/photo/student/`; break;
+         case 1: spath = `${spath}/student/`; break;
+         case 2: spath = `${spath}/staff/`; break;
+         case 3: spath = `${spath}/student/`; break;
+         case 4: spath = `${spath}/student/`; break;
+         case 5: spath = `${spath}/student/`; break;
+         case 6: spath = `${spath}/student/`; break;
       }
       var tag = tag.replace("/","").trim();
       const file = `${spath}${tag}.jpg`;
@@ -120,7 +120,7 @@ module.exports.SSO = {
       if(stats){
         return file;
       }else{
-        return `${spath}/photo/none.png`;
+        return `${spath}/none.png`;
       }
    },
 
@@ -630,7 +630,7 @@ module.exports.SSO = {
                userdata = { ...userdata,...s }
                const user = await this.SSO.fetchSSOUser(s.tag,s.gid)
                //const photo = await this.SSO.fetchPhoto(s.tag,s.gid)
-               const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${s.tag}`
+               const photo  = `${req.protocol}://${req.get('host')}/apis/?tag=${s.tag}`
                if(user && user.length > 0){ 
                  const roles = await this.SSO.fetchRoles(user[0].uid);
                  userdata = { ...userdata,...user[0], photo, roles, hasSSO:true }
