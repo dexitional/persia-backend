@@ -21,13 +21,11 @@ module.exports = {
  
          authenticateUser : async (req,res) => {
       const { username,password } = req.body;
-      console.log(req.body)
       try{
             var user = await SSO.verifyUser({username,password});
-            console.log(user)
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
-                const photo  = `${req.protocol}://${req.get('host')}/apis/?tag=${user[0].tag}`
+                const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user[0].tag}`
                 var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
@@ -48,7 +46,6 @@ module.exports = {
       }catch(e){
           console.log(e)
           const lgs = await await SSO.logger(0,'LOGIN_ERROR',{username,error:e}) // Log Activity
-          console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
   },
@@ -59,18 +56,17 @@ module.exports = {
       try{
 
               var user = await SSO.fetchUserByVerb(email);
-              console.log(user)
               if(user){
                 const isUser = await SSO.fetchSSOUser(user.tag);
                 if(isUser && isUser.length > 0){
                     // SSO USER EXISTS
                     const uid = isUser[0].uid;
                     var roles = await SSO.fetchRoles(uid); // Roles
-                    const photo  = `${req.protocol}://${req.get('host')}/apis/?tag=${user.tag}`
+                    const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`
                     var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                     var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                     userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                    var data = { roles:[...roles,...evsRoles], photo: ((photo && photo.length) > 0 ? `${req.protocol}://${req.get('host')}/apis/?tag=${photo && photo[0].tag}`: `${req.protocol}://${req.get('host')}/apis/?tag=00000000`), user:userdata && userdata[0] };
+                    var data = { roles:[...roles,...evsRoles], photo, user:userdata && userdata[0] };
                     // Generate Session Token 
                     const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                     data.token = token;
@@ -83,13 +79,12 @@ module.exports = {
                     const ups = await SSO.insertSSOUser({ username:email,password:sha1(pwd),group_id:user.gid,tag:user.tag})
                     if(ups){
                         const uid = ups.insertId;
-                        const pic = await SSO.insertPhoto(uid,user.tag,user.gid,'./public/cdn/none.png')
                         //const msg = `Hi, your username: ${email} password: ${pwd} .Goto https://ehub.ucc.edu.gh to access Other UCC Portal Services!`
                         //const sm = sms(user.phone,msg)
                         var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                         var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                         userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                        var data = { roles:[...evsRoles], photo: ((pic && pic.insertId > 0 )? `${req.protocol}://${req.get('host')}/apis/?tag=${user.tag}`: `${req.protocol}://${req.get('host')}/apis/?tag=00000000`), user:userdata && userdata[0] };
+                        var data = { roles:[...evsRoles], photo: `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`, user:userdata && userdata[0] };
                         // Generate Session Token 
                         const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                         data.token = token;
@@ -103,13 +98,11 @@ module.exports = {
 
             }else{
                 const lgs = await SSO.logger(0,'LOGIN_FAILED',{email}) // Log Activity
-                console.log(lgs)
                 res.status(200).json({success:false, data: null, msg:"Invalid username or password!"});
             }
       }catch(e){
           console.log(e)
           const lgs = await await SSO.logger(0,'LOGIN_ERROR',{email,error:e}) // Log Activity
-          console.log(lgs)
           res.status(200).json({success:false, data: null, msg: "System error detected."});
       }
   },
