@@ -430,7 +430,7 @@ module.exports = {
         console.log(err)
         res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
       }
-      const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+      const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
       res.status(200).json({success:true, data:stphoto});
     });
 },
@@ -454,7 +454,7 @@ sendPhotos : async (req,res) => {
       console.log(err)
       res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
     }
-    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
     res.status(200).json({success:true, data:stphoto});
   });
 },
@@ -476,7 +476,7 @@ rotatePhoto : async (req,res) => {
   var stats = fs.statSync(file);
   if(stats){
     await rotateImage(file);
-    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
     res.status(200).json({success:true, data:stphoto});
   }else{
     res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
@@ -500,7 +500,7 @@ removePhoto : async (req,res) => {
   var stats = fs.statSync(file);
   if(stats){
     fs.unlinkSync(file);
-    const stphoto = `${req.protocol}://${req.get('host')}/apis/?tag=${tag}&cache=${Math.random()*1000}`
+    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
     res.status(200).json({success:true, data:stphoto});
   }else{
     res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
@@ -518,7 +518,6 @@ stageAccount : async (req,res) => {
          if(resp[0].institute_email && resp[0].phone){
             const ups = await SSO.insertSSOUser({username:resp[0].institute_email,password:sha1(pwd),group_id:1,tag:refno})
             if(ups){
-              const pic = await SSO.insertPhoto(ups.insertId,refno,1,'./public/cdn/none.png')
               const msg = `Hi, your username: ${resp[0].institute_email} password: ${pwd} .Goto https://portal.aucc.edu.gh to access AUCC Portal!`
               const sm = sms(resp[0].phone,msg)
               res.status(200).json({success:true, data:msg});
