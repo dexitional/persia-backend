@@ -105,22 +105,26 @@ module.exports.SSO = {
    */
 
    fetchPhoto : async (tag,gid) => {
-      var spath = `${process.env.CDN_DIR}`;
+      var mpath = `${process.env.CDN_DIR}`,spath;
       switch(parseInt(gid)){
-         case 1: spath = `${spath}/student/`; break;
-         case 2: spath = `${spath}/staff/`; break;
-         case 3: spath = `${spath}/student/`; break;
-         case 4: spath = `${spath}/student/`; break;
-         case 5: spath = `${spath}/student/`; break;
-         case 6: spath = `${spath}/student/`; break;
+         case 1: spath = `${mpath}/student/`; break;
+         case 2: spath = `${mpath}/staff/`; break;
+         case 3: spath = `${mpath}/nss/`; break;
+         case 4: spath = `${mpath}/alumni/`; break;
+         case 5: spath = `${mpath}/applicant/`; break;
+         case 6: spath = `${mpath}/code/`; break;
       }
       var tag = tag.replace("/","").trim();
       const file = `${spath}${tag}.jpg`;
-      var stats = fs.statSync(file);
-      if(stats){
-        return file;
-      }else{
-        return `${spath}/none.png`;
+      try {
+         var stats = fs.statSync(file);
+         if(stats){
+           return file;
+         }else{
+           return `${mpath}/none.png`;
+         }
+      }catch (e) {
+         return `${mpath}/none.png`;
       }
    },
 
