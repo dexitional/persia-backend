@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 //var session = require('express-session');
+var fileUpload = require('express-fileupload');
 var cors = require('cors');
 var compression = require('compression');
 
@@ -10,10 +11,11 @@ var auth = require('./route/authRoute');
 var alumni = require('./route/alumniRoute');
 app.set('view engine','ejs');
 app.use(bodyParser.json({limit: '50mb'}));
-app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use("/public",express.static("public"));
 app.use(cors()); 
 app.use(compression()); 
+app.use(fileUpload());
 
 
 // Initialise App Routes

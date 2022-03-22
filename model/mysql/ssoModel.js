@@ -203,7 +203,7 @@ module.exports.SSO = {
 
 
    fetchUserByVerb : async (keyword) => {
-      
+      keyword = (keyword == null || keyword == 'null') ? '' : keyword.trim();
       var sql,res;
       // Student
       sql = "select s.*,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_email as mail,s.regno as tag,s.cellphone as phone,'01' as gid,'STUDENT' as group_name,p.short_name as descriptor,d.short_name as unitname from osis.students_db s left join osis.prog_db p on s.progid = p.progid  left join osis.departments d on d.deptid = p.deptid where s.regno = '"+keyword+"' or s.inst_email = '"+keyword+"'";
@@ -211,7 +211,7 @@ module.exports.SSO = {
       if(res1 && res1.length > 0) res = res1[0]
        
       // Staff
-      sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.ucc_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor,x.long_name as unitname from hr.staff s left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where s.ucc_mail = '"+keyword+"' or trim(s.staff_no) = '"+keyword+"'";
+      sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.ucc_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor,x.long_name as unitname from hr.staff s left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where (s.ucc_mail = '"+keyword+"' or trim(s.staff_no) = '"+keyword+"') and s.ucc_mail is not null";
       const res2 = await db.query(sql);
       if(res2 && res2.length > 0) res = res2[0] 
       
@@ -234,18 +234,19 @@ module.exports.SSO = {
    },
 
    fetchUsersByVerb : async (keyword) => {
-      
+      keyword = (keyword == null || keyword == 'null') ? '' : keyword.trim();
       var sql,res;
       // Student
       sql = "select s.*,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.inst_email as mail,s.regno as tag,s.cellphone as phone,'01' as gid,'STUDENT' as group_name,p.short_name as descriptor,d.short_name as unitname from osis.students_db s left join osis.prog_db p on s.progid = p.progid  left join osis.departments d on d.deptid = p.deptid where s.regno = '"+keyword+"' or s.inst_email = '"+keyword+"'";
       const res1 = await db.query(sql);
       if(res1 && res1.length > 0) res = res1
-      console.log(sql)
+      
       // Staff
-      sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.ucc_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor,x.long_name as unitname from hr.staff s left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where s.ucc_mail = '"+keyword+"' or trim(s.staff_no) = '"+keyword+"'";
+      sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.ucc_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor,x.long_name as unitname from hr.staff s left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where (s.ucc_mail = '"+keyword+"' or trim(s.staff_no) = '"+keyword+"') and s.ucc_mail is not null";
       const res2 = await db.query(sql);
-      if(res2 && res2.length > 0) res = res2 
       console.log(sql)
+      if(res2 && res2.length > 0) res = res2 
+      
       // NSS
       sql = "select s.*,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.mobile as phone,'03' as gid,'NSS' as group_name from hr.nss s left join hr.unit x on s.unit_id = x.id where s.nss_no = '"+keyword+"' or s.email = '"+keyword+"'";
       const res3 = await db.query(sql);
@@ -583,7 +584,6 @@ module.exports.SSO = {
       if(res && res.length > 0) {
          const count = res.length;
          var vt = await db.query("select * from ehub_vote.elector where trim(tag) = '"+tag+"'");
-         console.log(vt)
          if(vt && vt.length <= 0){
             if(count == Object.values(votes).length){
                // Update Candidate Votes Count

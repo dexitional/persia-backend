@@ -35,12 +35,10 @@ module.exports = {
                 data.token = token;
                 
                 const lgs = await SSO.logger(user[0].uid,'LOGIN_SUCCESS',{username}) // Log Activity
-                console.log(lgs)
                 res.status(200).json({success:true, data});
 
             }else{
                 const lgs = await SSO.logger(0,'LOGIN_FAILED',{username}) // Log Activity
-                console.log(lgs)
                 res.status(200).json({success:false, data: null, msg:"Invalid username or password!"});
             }
       }catch(e){
@@ -119,8 +117,6 @@ module.exports = {
       const dt = { access_token:otp,access_expire:moment().add(5,'minutes').format('YYYY-MM-DD HH:mm:ss') }
        
       var msg;
-      console.log(newphone)
-      console.log(mail)
       if(!newphone) {
          res.status(200).json({ success:false, data:null, msg:`${user.gname} phone incorrect, visit MIS-DICT for assistance !` });
       }else{
@@ -230,8 +226,6 @@ module.exports = {
               const sm = await sms(newphone,msg)
               //const sm = { code: 1000 }
               sendcode = sm.code
-              console.log(sm.code)
-              console.log(sdata)
               if(sendcode == 1000) { res.status(200).json({success:true, data: { otp, email:  sdata.userdata.username, sdata } }) }
               else if(sendcode == 1003) { res.status(200).json({ success:false, data: null, msg:"OTP credit exhausted!" }) }
               else { res.status(200).json({ success:false, data: null, msg:"OTP was not sent!" }) }
@@ -325,8 +319,6 @@ module.exports = {
               const resp = sms(user.phone,msg);
               //if(resp.code == '1000') 
               count = count + 1
-              console.log(count)
-              console.log(resp.code)
             }
           }
         }
@@ -339,8 +331,6 @@ module.exports = {
               const resp = sms(user.phone,msg);
               //if(resp.code == '1000') 
               count += 1
-              console.log(count)
-              console.log(resp.code)
             }
           } 
         }
@@ -358,7 +348,6 @@ module.exports = {
        const msg = `Hello kobby, Login info, U: test\@st.aucc.edu.gh, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
        const resp = sms('0277675089',msg);
        //if(resp.code == '1000') 
-       console.log(resp.code)
        res.status(200).json({success:true, data: resp })
        
     }catch(e){
@@ -396,7 +385,6 @@ module.exports = {
       const bio = await SSO.fetchUserByVerb(tag); // Biodata
       if(bio){
         var pic = await SSO.fetchPhoto(tag,bio.gid); // Photo
-        console.log(pic)
         if(pic){
           res.status(200).sendFile(pic);
         }else{
@@ -436,27 +424,28 @@ module.exports = {
 },
 
 sendPhotos : async (req,res) => {
-  var { tag,group_id } = req.body;
-  var imageBuffer = decodeBase64Image(req.body.photo);
-  var spath = `${process.env.CDN_DIR}`;
-  switch(parseInt(group_id)){
-     case 1: spath = `${spath}/student/`; break;
-     case 2: spath = `${spath}/staff/`; break;
-     case 3: spath = `${spath}/nss/`; break;
-     case 4: spath = `${spath}/applicant/`; break;
-     case 5: spath = `${spath}/alumni/`; break;
-     case 6: spath = `${spath}/code/`; break;
-  }
-  tag = tag.toString().replaceAll("/","").trim().toLowerCase();
-  const file = `${spath}${tag}.jpg`;
-  fs.writeFile(file, imageBuffer.data, async function(err) {
-    if(err) {
-      console.log(err)
-      res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
+  var { gid } = req.body;
+  var spath = `${process.env.CDN_DIR}`, mpath;
+  if(req.files && req.files.photos.length > 0){
+    for(var file of req.files.photos){
+      switch(parseInt(gid)){
+        case 1: mpath = `${spath}/student/`; break;
+        case 2: mpath = `${spath}/staff/`; break;
+        case 3: mpath = `${spath}/nss/`; break;
+        case 4: mpath = `${spath}/applicant/`; break;
+        case 5: mpath = `${spath}/alumni/`; break;
+        case 6: mpath = `${spath}/code/`; break;
+      }
+      let tag = file.name.toString().split('.')[0].replaceAll("/","").trim().toLowerCase();
+      tag = `${mpath}${tag}.jpg`;
+      file.mv(tag,(err) => {
+        if(!err) count = count+1
+      })
     }
-    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
-    res.status(200).json({success:true, data:stphoto});
-  });
+    res.status(200).json({ success:true, data: null });
+    //if(count > 0 && count < req.files.photos.length) res.status(200).json({success:true, data: count, msg:`${count} photos uploaded out of ${req.files.photos.length}`});
+    //res.status(200).json({success:false, data: null, msg:`Upload failed!`});
+  }
 },
 
 
@@ -613,7 +602,6 @@ postHRStaffDataHRS : async (req,res) => {
     delete req.body.first_appoint;delete req.body.pnit_id;
     delete req.body.scale_id;delete req.body.updated_at;
     delete req.body.created_at
-    console.log(req.body)
     try{
       var resp;
       if(id <= 0){
@@ -676,7 +664,6 @@ stageAccountHRS : async (req,res) => {
       const { staff_no } = req.params;
       const pwd = nanoid()
       var resp = await SSO.fetchStaffProfile(staff_no);
-      console.log(resp)
       if(resp && resp.length > 0){
          if(resp[0].inst_mail && resp[0].phone){
             const ups = await SSO.insertSSOUser({username:resp[0].inst_mail,password:sha1(pwd),group_id:2,tag:staff_no})
@@ -736,7 +723,6 @@ upgradeRole : async (req,res) => {
           const msg = `Hi ${resp.lname}! Your privilege on AUCC EduHub has been upgraded. Goto https://portal.aucc.edu.gh to access portal!`
           if(roles){
             const send = await sms(resp[0].phone,msg)
-            console.log(send)
           }
           res.status(200).json({success:true, data:roles});
         }else{
@@ -756,7 +742,6 @@ revokeRole : async (req,res) => {
   try{
       const { uid,role } = req.params;
       const pwd = nanoid()
-      console.log(uid,role)
       var resp = await SSO.fetchUser(uid,'02');
       if(resp && resp.length > 0){
         if(resp[0].phone){
@@ -764,7 +749,6 @@ revokeRole : async (req,res) => {
           const msg = `Hi ${resp.lname}! A privilege on AUCC EduHub has been revoked. Goto https://portal.aucc.edu.gh to access portal!`
           if(roles){
              const send = await sms(resp[0].phone,msg)
-             console.log(send)
           }
           res.status(200).json({success:true, data:roles});
         }else{
@@ -810,7 +794,6 @@ postHRUnitDataHRS : async (req,res) => {
     delete req.body.head_name;delete req.body.head_no;
     delete req.body.parent;delete req.body.school;
     delete req.body.subhead;
-    console.log(req.body)
     try{
       var resp;
       if(id <= 0){
@@ -851,7 +834,6 @@ fetchHRJobData : async (req,res) => {
       const page = req.query.page;
       const keyword = req.query.keyword;
       var jobs = await SSO.fetchHRJob(page,keyword);
-      console.log(jobs)
       if(jobs && jobs.data.length > 0){
         res.status(200).json({success:true, data:jobs});
       }else{
@@ -868,7 +850,6 @@ postHRJobData : async (req,res) => {
     const { id } = req.body;
     //if(req.body.lev1_id == '') req.body.lev1_id = null
     //delete req.body.subhead;
-    console.log(req.body)
     try{
       var resp;
       if(id <= 0){
@@ -956,7 +937,6 @@ fetchEvsMonitor : async (req,res) => {
 fetchSSOIdentity : async (req,res) => {
   try{
       const { search } = req.query;
-      console.log(search)
       var resp = await SSO.fetchSSOIdentity(req,search);
       if(resp){
           res.status(200).json({success:true, data:resp});
