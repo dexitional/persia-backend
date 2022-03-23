@@ -25,7 +25,7 @@ module.exports = {
             var user = await SSO.verifyUser({username,password});
             if(user && user.length > 0){
                 var roles = await SSO.fetchRoles(user[0].uid); // Roles
-                const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user[0].tag}`
+                const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user[0].tag.toLowerCase()}`
                 var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
                 var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
@@ -60,7 +60,7 @@ module.exports = {
                     // SSO USER EXISTS
                     const uid = isUser[0].uid;
                     var roles = await SSO.fetchRoles(uid); // Roles
-                    const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`
+                    const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag.toLowerCase()}`
                     var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                     var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                     userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
@@ -82,7 +82,7 @@ module.exports = {
                         var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                         var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                         userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
-                        var data = { roles:[...evsRoles], photo: `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag}`, user:userdata && userdata[0] };
+                        var data = { roles:[...evsRoles], photo: `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag.toLowerCase()}`, user:userdata && userdata[0] };
                         // Generate Session Token 
                         const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                         data.token = token;
@@ -419,7 +419,7 @@ module.exports = {
         console.log(err)
         res.status(200).json({success:false, data: null, msg:"Photo not saved!"});
       }
-      const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
+      const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag.toLowerCase()}&cache=${Math.random()*1000}`
       res.status(200).json({success:true, data:stphoto});
     });
 },
@@ -466,7 +466,7 @@ rotatePhoto : async (req,res) => {
   var stats = fs.statSync(file);
   if(stats){
     await rotateImage(file);
-    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
+    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag.toLowerCase()}&cache=${Math.random()*1000}`
     res.status(200).json({success:true, data:stphoto});
   }else{
     res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
@@ -490,7 +490,7 @@ removePhoto : async (req,res) => {
   var stats = fs.statSync(file);
   if(stats){
     fs.unlinkSync(file);
-    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag}&cache=${Math.random()*1000}`
+    const stphoto = `${req.protocol}://${req.get('host')}/api/photos/?tag=${tag.toLowerCase()}&cache=${Math.random()*1000}`
     res.status(200).json({success:true, data:stphoto});
   }else{
     res.status(200).json({success:false, data: null, msg:"Photo Not Found!"});
