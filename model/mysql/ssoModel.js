@@ -638,7 +638,7 @@ module.exports.SSO = {
                userdata = { ...userdata,...s }
                const user = await this.SSO.fetchSSOUser(s.tag,s.gid)
                //const photo = await this.SSO.fetchPhoto(s.tag,s.gid)
-               const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${s.tag.toLowerCase()}`
+               const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${s.tag.toString().toLowerCase()}`
                if(user && user.length > 0){ 
                  const roles = await this.SSO.fetchRoles(user[0].uid);
                  userdata = { ...userdata,...user[0], photo, roles, hasSSO:true }
