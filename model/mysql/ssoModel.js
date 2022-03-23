@@ -116,6 +116,8 @@ module.exports.SSO = {
       }
       var tag = tag.replaceAll("/","").trim();
       const file = `${spath}${tag}.jpg`;
+      console.log('CDN_DIR',process.env.CDN_DIR)
+      console.log('THEME_TAG',process.env.THEME_TAG)
       try {
          var stats = fs.statSync(file);
          if(stats){
