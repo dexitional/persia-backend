@@ -19,7 +19,7 @@ const { Box } = require('../../model/mysql/boxModel');
 
 module.exports = {
  
-         authenticateUser : async (req,res) => {
+  authenticateUser : async (req,res) => {
       const { username,password } = req.body;
       try{
             var user = await SSO.verifyUser({username,password});
@@ -358,7 +358,7 @@ module.exports = {
 
   
   fetchEvsPhoto : async (req,res) => {
-      const tag = req.query.tag;
+      const tag = req.query.tag.trim().toLowerCase();
       const eid = req.query.eid;
       var pic = await SSO.fetchEvsPhoto(tag,eid); // Photo
       if(pic.length > 0){
@@ -380,7 +380,7 @@ module.exports = {
   },
 
   fetchPhoto : async (req,res) => {
-    const tag = req.query.tag;
+    const tag = req.query.tag.trim().toLowerCase();
     try { 
       const bio = await SSO.fetchUserByVerb(tag); // Biodata
       if(bio){

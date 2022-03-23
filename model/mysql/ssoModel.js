@@ -116,12 +116,14 @@ module.exports.SSO = {
       }
       var tag = tag.replaceAll("/","").trim();
       const file = `${spath}${tag}.jpg`;
+      const file2 = `${spath}${tag}.jpeg`;
       console.log('CDN_DIR',process.env.CDN_DIR)
       console.log('THEME_TAG',process.env.THEME_TAG)
       try {
-         var stats = fs.statSync(file);
-         if(stats){
+         if(fs.statSync(file)){
            return file;
+         }else if(fs.statSync(file2)){
+           return file2;
          }else{
            return `${mpath}/none.png`;
          }
