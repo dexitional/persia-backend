@@ -117,8 +117,6 @@ module.exports.SSO = {
       var tag = tag.replaceAll("/","").trim();
       const file = `${spath}${tag}.jpg`;
       const file2 = `${spath}${tag}.jpeg`;
-      console.log('CDN_DIR',process.env.CDN_DIR)
-      console.log('THEME_TAG',process.env.THEME_TAG)
       try {
          if(fs.statSync(file)){
            return file;
