@@ -114,7 +114,7 @@ module.exports.SSO = {
          case 5: spath = `${mpath}/applicant/`; break;
          case 6: spath = `${mpath}/code/`; break;
       }
-      var tag = tag.replace("/","").trim();
+      var tag = tag.replaceAll("/","").trim();
       const file = `${spath}${tag}.jpg`;
       try {
          var stats = fs.statSync(file);

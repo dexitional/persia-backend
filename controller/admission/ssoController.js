@@ -345,7 +345,7 @@ module.exports = {
   testsms : async (req,res) => {
     try{
       const pwd = nanoid()
-       const msg = `Hello kobby, Login info, U: test\@st.aucc.edu.gh, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
+      const msg = `Hello kobby, Login info, U: test\@st.aucc.edu.gh, P: ${pwd} Goto https://portal.aucc.edu.gh to access portal.`
        const resp = sms('0277675089',msg);
        //if(resp.code == '1000') 
        res.status(200).json({success:true, data: resp })
@@ -413,6 +413,7 @@ module.exports = {
     }
     tag = tag.toString().replaceAll("/","").trim().toLowerCase();
     const file = `${spath}${tag}.jpg`;
+    console.log(file)
     fs.writeFile(file, imageBuffer.data, async function(err) {
       if(err) {
         console.log(err)
