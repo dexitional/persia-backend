@@ -21,13 +21,13 @@
                     "AD3_PASS" : "DHRCdodowa1",
 
                     "MYSQL_HOST" :"127.0.0.1",
-                    "MYSQL_PORT" : 8889,
+                    "MYSQL_PORT" : 3306,
                     "MYSQL_USER" :"root",
-                    "MYSQL_PASS" :"root",
+                    "MYSQL_PASS" :"DHRCdodowa1",
                     "MYSQL_DB" : "ehub_alumni",
 
                     "THEME_TAG" : "ucc",
-                    "CDN_DIR" : "/Users/newowne/Documents/PROJECTS/2021/persia/backend/public/cdn/photo"
+                    "CDN_DIR" : "/c/cloud/projects/Fullstack/persia/backend/public/cdn/photo"
                 },
 
                 "env_online": {
