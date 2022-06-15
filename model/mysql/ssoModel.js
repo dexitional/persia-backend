@@ -11,7 +11,7 @@ module.exports.SSO = {
    verifyUser : async ({username,password}) => {
       var queries = [
          "select u.* from ehub_identity.user u where u.username = ? and password = sha1(?)", // SSO Users
-         "select 0 as uid,1 as group_name,s.regno as tag,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.fname,s.mname,s.lname, s.level,(s.level/100) as year,s.progid as program,s.hallid as hall,s.inst_email as mail from osisextra.useraccount u left join osis.students_db s on u.regno = s.regno where u.regno = ? and u.password = ?" // UCC Proprietory Student Users
+         "select 0 as uid,1 as group_name,s.regno as tag,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.fname,s.mname,s.lname, s.level,(s.level/100) as year,s.progid as program,s.hallid as hall,s.inst_email as mail from osisextra.useraccount u left join osis.students_db s on u.regno = s.regno where u.regno = ? and u.password = md5(?)" // UCC Proprietory Student Users
       ];
 
       var res;
