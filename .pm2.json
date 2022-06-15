@@ -27,7 +27,7 @@
                     "MYSQL_DB" : "ehub_alumni",
 
                     "THEME_TAG" : "ucc",
-                    "CDN_DIR" : "/c/cloud/projects/Fullstack/persia/backend/public/cdn/photo"
+                    "CDN_DIR" : "/projects/Fullstack/persia/backend/public/cdn/photo"
                 },
 
                 "env_online": {

@@ -9,9 +9,27 @@ var fs = require('fs');
 module.exports.SSO = {
    
    verifyUser : async ({username,password}) => {
-      const sql = "select u.* from ehub_identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
-      const res = await db.query(sql);
+      var queries = [
+         "select u.* from ehub_identity.user u where u.username = ? and password = sha1(?)", // SSO Users
+         "select 0 as uid,1 as group_name,s.regno as tag,concat(s.fname,' ',ifnull(concat(s.mname,' '),''),s.lname) as name,s.fname,s.mname,s.lname, s.level,(s.level/100) as year,s.progid as program,s.hallid as hall,s.inst_email as mail from osisextra.useraccount u left join osis.students_db s on u.regno = s.regno where u.regno = ? and u.password = ?" // UCC Proprietory Student Users
+      ];
+
+      var res;
+
+      //const sql = "select u.* from ehub_identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
+      //const sql_st = "select u.* from ehub_identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
+      //const res = await db.query(sql);
+
+      //return res;
+
+      for(const sql of queries){
+         const out = await db.query(sql,[username,password]);
+         if(out && out.length > 0){
+            res = out;break;
+         }  setTimeout(()=> null,300)
+      }
       return res;
+
    },
 
    verifyUserByEmail : async ({email}) => {
@@ -70,15 +88,19 @@ module.exports.SSO = {
    fetchEvsRoles : async (tag) => {
       var roles = [];
       // Electoral Roles
-      var sql = "select e.*,v.vote_time,v.vote_status,v.vote_sum,JSON_SEARCH(e.voters_whitelist, 'all', "+tag+") as voter,find_in_set('"+tag+"',e.ec_admins) as ec,find_in_set('"+tag+"',e.ec_agents) as agent from ehub_vote.election e left join ehub_vote.elector v on (e.id = v.election_id and v.tag = '"+tag+"') where (json_search(e.voters_whitelist, 'one', "+tag+") is not null or find_in_set('"+tag+"',ec_admins) > 0 or find_in_set('"+tag+"',ec_agents) > 0) and e.live_status = 1";
-      var res = await db.query(sql);
+      //var sql = "select e.*,v.vote_time,v.vote_status,v.vote_sum,JSON_SEARCH(e.voters_whitelist, 'all', "+tag+") as voter,find_in_set('"+tag+"',e.ec_admins) as ec,find_in_set('"+tag+"',e.ec_agents) as agent from ehub_vote.election e left join ehub_vote.elector v on (e.id = v.election_id and v.tag = '"+tag+"') where ((json_search(e.voters_whitelist, 'one', "+tag+") is not null or find_in_set('"+tag+"',ec_admins) > 0 or find_in_set('"+tag+"',ec_agents) > 0)) and e.live_status = 1";
+      var sql = "select e.*,v.vote_time,v.vote_status,v.vote_sum,JSON_SEARCH(e.voters_whitelist, 'all', ?) as voter,find_in_set(?,e.ec_admins) as ec,find_in_set(?,e.ec_agents) as agent from ehub_vote.election e left join ehub_vote.elector v on (e.id = v.election_id and v.tag = ?) where ((json_search(e.voters_whitelist, 'one', ?) is not null or find_in_set(?,ec_admins) > 0 or find_in_set(?,ec_agents) > 0)) and e.live_status = 1";
+      
+      var res = await db.query(sql,[tag,tag,tag,tag,tag,tag,tag]);
       if(res && res.length > 0){
          for(var r of res){
             if(r.ec) roles.push({ role_id:9, role_name:'ELECTORAL ADMIN', role_desc:'Electa Administrator', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
             else if(r.agent) roles.push({ role_id:10, role_name:'ELECTORAL AGENT', role_desc:'Electa Agent', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
             else if(r.voter) roles.push({ role_id:11, role_name:'ELECTORAL VOTER', role_desc:'Electa Voter', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: res })
          }
-      } 
+      }else{
+         roles.push({ role_id:11, role_name:'ELECTORAL VOTER', role_desc:'Electa Voter', app_name:'Electa Voting System', app_desc:'Electa Voting System for the University', app_tag:'evs', ...r, data: [] })
+      }
       /*
       const mx = md.map( r => `${r}`)
       fs.writeFile('utag.json',JSON.stringify(mx), function (err) {
@@ -90,8 +112,8 @@ module.exports.SSO = {
    },
 
    fetchRoles : async (uid) => {
-      const sql = "select u.arole_id,a.role_name,a.role_desc,x.app_name,x.app_tag from ehub_identity.user_role u left join ehub_identity.app_role a on u.arole_id = a.arole_id left join ehub_identity.app x on a.app_id = x.app_id where u.uid = "+uid;
-      const res = await db.query(sql);
+      const sql = "select u.arole_id,a.role_name,a.role_desc,x.app_name,x.app_tag from ehub_identity.user_role u left join ehub_identity.app_role a on u.arole_id = a.arole_id left join ehub_identity.app x on a.app_id = x.app_id where u.uid = ?";
+      const res = await db.query(sql,[uid]);
       return res;
    },
 
@@ -134,11 +156,11 @@ module.exports.SSO = {
    fetchEvsPhoto : async (tag,eid) => {
       var sql;
       if(tag == 'logo'){
-        sql = "select logo as path from ehub_vote.election where id = "+eid;
+        sql = "select logo as path from ehub_vote.election where id = ?";
       }else{
-        sql = "select photo as path from ehub_vote.candidate where id = "+eid;
+        sql = "select photo as path from ehub_vote.candidate where id = ?";
       }
-      const res = await db.query(sql);
+      const res = await db.query(sql,[eid]);
       return res;
    },
 

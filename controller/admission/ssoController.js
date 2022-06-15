@@ -21,16 +21,19 @@ module.exports = {
  
   authenticateUser : async (req,res) => {
       const { username,password } = req.body;
+      console.log(req.body)
       try{
             var user = await SSO.verifyUser({username,password});
+            console.log(user)
             if(user && user.length > 0){
-                var roles = await SSO.fetchRoles(user[0].uid); // Roles
-                const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user[0].tag.toString().toLowerCase()}`
+                var roles = user[0].uid > 0 ? await SSO.fetchRoles(user[0].uid) : []; // Roles
+                const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${encodeURIComponent(user[0].tag.toString().toLowerCase())}`
                 var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
-                var userdata = await SSO.fetchUser(user[0].uid,user[0].group_id); // UserData
+                var userdata = user[0].uid > 0 ? await SSO.fetchUser(user[0].uid,user[0].group_id) : user; // UserData
                 userdata[0] = userdata ? { ...userdata[0], user_group : user[0].group_id, mail: user[0].username } : null;
                 var data = { roles:[...roles,...evsRoles], photo, user:userdata && userdata[0] };
                 // Generate Session Token 
+                console.log(data);
                 const token = jwt.sign({ data:user }, 'secret', { expiresIn: 60 * 60 });
                 data.token = token;
                 
