@@ -22,7 +22,7 @@ console.log({
 })
 
 var pool = mysql.createPool({
-    multipleStatements: true,
+    multipleStatements: false,
     connectionLimit : 1000,
     host : process.env.MYSQL_HOST,
     port : process.env.MYSQL_PORT,
