@@ -934,6 +934,38 @@ fetchEvsMonitor : async (req,res) => {
 },
 
 
+fetchEvsUpdate : async (req,res) => {
+  try{
+      const { tag } = req.params;
+      var resp = await SSO.fetchEvsRoles(tag); // EVS Roles
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+fetchEvsReceipt : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.fetchEvsMonitor(id);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
 
 
 // SSO - Identity ROUTES */

@@ -60,6 +60,9 @@ Router.get('/evs/data/:id/:tag', SSOController.fetchEvsData);
 Router.post('/evs/data', SSOController.postEvsData);
 Router.get('/evs/monitor/:id', SSOController.fetchEvsMonitor);
 Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
+Router.get('/evs/receipt/:id/:tag', SSOController.fetchEvsReceipt);
+Router.get('/evs/update/:tag', SSOController.fetchEvsUpdate);
+
 
 /* SSO - Identity ROUTES */
 Router.get('/sso/identity', SSOController.fetchSSOIdentity);
