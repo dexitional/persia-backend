@@ -39,6 +39,7 @@
     "moment": "^2.29.1",
     "mongoose": "^5.12.4",
     "mysql": "^2.18.1",
+    "mysql2": "^2.3.3",
     "nanoid": "^3.1.23",
     "nodemailer": "^6.6.3",
     "request": "^2.88.2",

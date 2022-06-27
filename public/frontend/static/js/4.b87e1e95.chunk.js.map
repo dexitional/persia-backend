@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../../dextional/projects/Fullstack/persia/frontend/src/assets/img/logo/ucc/logo.png"],"names":["module","exports","__webpack_require__","p"],"mappings":"6EAAAA,EAAAC,QAAiBC,EAAAC,EAAuB","file":"static/js/4.b87e1e95.chunk.js","sourcesContent":["module.exports = __webpack_public_path__ + \"static/media/logo.d3dd99da.png\";"],"sourceRoot":""}

@@ -16,20 +16,13 @@ module.exports.SSO = {
 
       var res;
 
-      //const sql = "select u.* from ehub_identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
-      //const sql_st = "select u.* from ehub_identity.user u where u.username = '"+username+"' and password = sha1('"+password+"')";
-      //const res = await db.query(sql);
-
-      //return res;
-
       for(const sql of queries){
          const out = await db.query(sql,[username,password]);
          if(out && out.length > 0){
             res = out;break;
-         }  setTimeout(()=> null,300)
+         }  setTimeout(() => null,300)
       }
       return res;
-
    },
 
    verifyUserByEmail : async ({email}) => {
@@ -599,15 +592,79 @@ module.exports.SSO = {
       return data;
    },
 
+   fetchEvsReceipt : async (id,tag) => {
+      // Voters data
+      let data = {}, selections = [];
+      var res = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      if(res && res.length > 0) data.electors = res;
+      var res = await db.query("select * from ehub_vote.elector where election_id = "+id+" and tag = '"+tag+"'");
+      if(res && res.length > 0) {
+         const candidates = res[0].vote_sum && res[0].vote_sum.split(',');
+         if(candidates){
+            for(const candid of candidates) {
+               var cs = await db.query("select c.*,p.name as portfolio from ehub_vote.candidate c left join ehub_vote.portfolio p on c.portfolio_id = p.id where p.election_id = "+id+" and c.id = "+candid);
+               if(cs && cs.length > 0) selections.push(cs[0]);
+            }
+         }
+      }
+      return { ...data, selections };
+   },
+
+   fetchEvsRegister : async (id) => {
+      // Voters data
+      let data = {}, electors = [];
+      var vs = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      if(res && res.length > 0){
+         const voters = res[0].voters_whitelist && JSON.parse(res[0].voters_whitelist) || [];
+         const voters_data = res[0].voters_whitedata && JSON.parse(res[0].voters_whitedata) || [];
+         const { group_id } = res[0]
+         // electors = voters;
+         if(voters.length > 0 && voters.length != voters_data.length){
+            for(const tag of voters){
+              let sql;
+              if(group_id === 2) sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`
+              if(group_id === 1) sql = `select s.regno as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),s.lname) as name,s.inst_email as mail from osis.students_db s where s.regno = ?`
+              const ss = await db.query(sql,[tag])
+              if(ss && ss.length > 0) electors.push(ss[0])
+            }
+            // Update Voters_whitedata
+            await db.query("update ehub_vote.election set voters_whitedata = ?, voters_count = ? where id = ?",[JSON.stringify(electors),electors.length,id])
+         
+         }else if(voters_data.length > 0){
+            electors = voters_data;
+         }
+
+         if(vs && vs.length > 0){
+           electors = electors.map(row => {
+             const tag = row.tag;
+             const vf = vs.find(r => r.tag == tag)
+             if(vf) return { ...row, voted:1 }
+             return { ...row, voted:0 }
+           })
+            
+         }
+      }
+      
+      return { ...res && res[0], electors };
+   },
+
+   
+
 
    postEvsData : async (data) => {
       const { id,tag,votes,name } = data;
       
+      // START TRANSACTION
+      //await db.query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
+      //await db.beginTransaction();
+      try {
+
       // Get Portfolio count & Verify whether equal to data posted
       var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = "+id);
       if(res && res.length > 0) {
          const count = res.length;
-         var vt = await db.query("select * from ehub_vote.elector where trim(tag) = '"+tag+"'");
+         var vt = await db.query("select * from ehub_vote.elector where election_id = "+id+" and trim(tag) = '"+tag+"' and vote_status = 1");
          if(vt && vt.length <= 0){
             if(count == Object.values(votes).length){
                // Update Candidate Votes Count
@@ -622,25 +679,48 @@ module.exports.SSO = {
                      }
                   }
                }
-               if(count != update_count) return { success: false, msg: 'Votes partially recorded', code : 1001 }
+
+               if(count != update_count){
+                   throw new Error(`Votes partially received`);
+                   //return { success: false, msg: 'Votes partially recorded', code: 1001 }
+               }
                // Insert Into Elector Database
                const dm = { vote_status: 1, vote_sum: Object.values(votes).join(','), vote_time:new Date(), name, tag, election_id:id }
                const ins = await db.query("insert into ehub_vote.elector set ?",dm);
-               if(ins && ins.insertId > 0) return { success: true, msg: 'Voted successfully', code: 1000 }
-               return { success: false, msg: 'Votes saved for elector', code: 1002 }
+
+
+               if(ins && ins.insertId > 0) {
+                  //await db.commit();
+                  return { success: true, msg: 'Voted successfully', code: 1000 }
+
+               } else {
+                  throw new Error(`Votes saved for elector`);
+                  //return { success: false, msg: 'Votes saved for elector', code: 1002 }
+               }
+
+               
             }else{
                // Votes Not Received
-               return { success: false, msg: 'Votes partially received', code: 1003 }
+               throw new Error(`Votes partially received`);
+               //return { success: false, msg: 'Votes partially received', code: 1003 }
             }
             
          }else{
             // Voted Already
-            return { success: false, msg: 'Elector already voted', code: 1004 }
+            throw new Error(`Elector already voted`);
+            //return { success: false, msg: 'Elector already voted', code: 1004 }
          }
      
       }else{
-         return { success: false, msg: 'Portfolio not found', code: 1005 }
+         throw new Error(`Portfolio not found`);
+         //return { success: false, msg: 'Portfolio not found', code: 1005 }
       }
+
+     } catch (e){
+       //db.rollback();
+       //console.info('Rollback successful');
+       return { success: false, msg: e?.getMessage() || 'Please re-submit again', code: 1004 }
+     }
    },
 
 

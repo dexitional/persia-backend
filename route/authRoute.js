@@ -61,6 +61,7 @@ Router.post('/evs/data', SSOController.postEvsData);
 Router.get('/evs/monitor/:id', SSOController.fetchEvsMonitor);
 Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
 Router.get('/evs/receipt/:id/:tag', SSOController.fetchEvsReceipt);
+Router.get('/evs/register/:id', SSOController.fetchEvsRegister);
 Router.get('/evs/update/:tag', SSOController.fetchEvsUpdate);
 
 

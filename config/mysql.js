@@ -11,15 +11,6 @@ var pool = mysql.createPool({
     database : 'ehub_alumni',
 });
 */
-console.log({
-    multipleStatements: false,
-    connectionLimit : 1000,
-    host : process.env.MYSQL_HOST,
-    port : process.env.MYSQL_PORT,
-    user: process.env.MYSQL_USER,
-    password : process.env.MYSQL_PASS,
-    database : process.env.MYSQL_DB,
-})
 
 var pool = mysql.createPool({
     multipleStatements: false,

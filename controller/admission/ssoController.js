@@ -63,7 +63,7 @@ module.exports = {
                     // SSO USER EXISTS
                     const uid = isUser[0].uid;
                     var roles = await SSO.fetchRoles(uid); // Roles
-                    const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${user.tag.toString().toLowerCase()}`
+                    const photo  = `${req.protocol}://${req.get('host')}/api/photos/?tag=${encodeURIComponent(user.tag.toString().toLowerCase())}`
                     var evsRoles = await SSO.fetchEvsRoles(user.tag); // EVS Roles
                     var userdata = await SSO.fetchUser(uid,user.gid); // UserData
                     userdata[0] = userdata ? { ...userdata[0], user_group : user.gid, mail: email } : null;
@@ -908,7 +908,9 @@ fetchEvsData : async (req,res) => {
 
 
 postEvsData : async (req,res) => {
+  console.log(req.body)
     try{
+     
       var resp = await SSO.postEvsData(req.body)
       res.status(200).json(resp);
     }catch(e){
@@ -952,8 +954,24 @@ fetchEvsUpdate : async (req,res) => {
 
 fetchEvsReceipt : async (req,res) => {
   try{
+      const { id,tag } = req.params;
+      var resp = await SSO.fetchEvsReceipt(id,tag);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+fetchEvsRegister : async (req,res) => {
+  try{
       const { id } = req.params;
-      var resp = await SSO.fetchEvsMonitor(id);
+      var resp = await SSO.fetchEvsRegister(id);
       if(resp){
           res.status(200).json({success:true, data:resp});
       }else{
