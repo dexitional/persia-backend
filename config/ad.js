@@ -10,7 +10,7 @@ const getConn = (domain) => {
             user: process.env.AD1_USER,
             pass: process.env.AD1_PASS,
             tlsOptions: {
-                rejectUnauthorized: false
+               rejectUnauthorized: false
             }
         });
     }else if(domain == 'stu.ucc.edu.gh'){ 
