@@ -175,6 +175,9 @@ module.exports.SSO = {
       return res;
    },
 
+  
+   
+
    /*
 
    fetchUser : async (uid,gid) => {
@@ -722,6 +725,52 @@ module.exports.SSO = {
        return { success: false, msg: e?.getMessage() || 'Please re-submit again', code: 1004 }
      }
    },
+
+   updateEvsControl : async (id,data) => {
+      const sql = "update ehub_vote.election set ? where id = "+id
+      const res = await db.query(sql,data);
+      return res;
+   },
+
+   removeVoter : async (tag) => {
+      // Voters data
+      let data = {}, electors = [];
+      var vs = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      if(res && res.length > 0){
+         const voters = res[0].voters_whitelist && JSON.parse(res[0].voters_whitelist) || [];
+         const voters_data = res[0].voters_whitedata && JSON.parse(res[0].voters_whitedata) || [];
+         const { group_id } = res[0]
+         // electors = voters;
+         if(voters.length > 0 && voters.length != voters_data.length){
+            for(const tag of voters){
+              let sql;
+              if(group_id === 2) sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`
+              if(group_id === 1) sql = `select s.regno as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),s.lname) as name,s.inst_email as mail from osis.students_db s where s.regno = ?`
+              const ss = await db.query(sql,[tag])
+              if(ss && ss.length > 0) electors.push(ss[0])
+            }
+            // Update Voters_whitedata
+            await db.query("update ehub_vote.election set voters_whitedata = ?, voters_count = ? where id = ?",[JSON.stringify(electors),electors.length,id])
+         
+         }else if(voters_data.length > 0){
+            electors = voters_data;
+         }
+
+         if(vs && vs.length > 0){
+           electors = electors.map(row => {
+             const tag = row.tag;
+             const vf = vs.find(r => r.tag == tag)
+             if(vf) return { ...row, voted:1 }
+             return { ...row, voted:0 }
+           })
+            
+         }
+      }
+      
+      return { ...res && res[0], electors };
+   },
+
 
 
 

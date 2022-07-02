@@ -63,6 +63,8 @@ Router.get('/evs/result/:id', SSOController.fetchEvsMonitor);
 Router.get('/evs/receipt/:id/:tag', SSOController.fetchEvsReceipt);
 Router.get('/evs/register/:id', SSOController.fetchEvsRegister);
 Router.get('/evs/update/:tag', SSOController.fetchEvsUpdate);
+Router.post('/evs/setcontrol', SSOController.updateEvsControl);
+Router.get('/evs/deletevoter/:tag', SSOController.removeVoter);
 
 
 /* SSO - Identity ROUTES */

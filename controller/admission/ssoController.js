@@ -983,6 +983,38 @@ fetchEvsRegister : async (req,res) => {
   }
 },
 
+updateEvsControl : async (req,res) => {
+  try{
+      const { id,data } = req.body;
+      var resp = await SSO.updateEvsControl(id,data);
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+removeVoter : async (req,res) => {
+  try{
+      const { tag } = req.params;
+      var resp = await SSO.removeVoter(tag);
+      if(resp){
+          res.status(200).json({success:true, data:resp});
+      }else{
+          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
 
 
 
