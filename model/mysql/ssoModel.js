@@ -264,7 +264,6 @@ module.exports.SSO = {
       // Staff
       sql = "select s.*,j.title as designation,x.long_name as unitname,concat(s.fname,' ',ifnull(concat(mname,' '),''),s.lname) as name,s.ucc_mail as mail,s.staff_no as tag,'02' as gid,'STAFF' as group_name,j.title as descriptor,x.long_name as unitname from hr.staff s left join hr.promotion p on s.promo_id = p.id left join hr.job j on j.id = p.job_id left join hr.unit x on p.unit_id = x.id where (s.ucc_mail = '"+keyword+"' or trim(s.staff_no) = '"+keyword+"') and s.ucc_mail is not null";
       const res2 = await db.query(sql);
-      console.log(sql)
       if(res2 && res2.length > 0) res = res2 
       
       // NSS
@@ -732,17 +731,19 @@ module.exports.SSO = {
       return res;
    },
 
-   removeVoter : async (tag) => {
+   removeVoter : async (id,tg) => {
       // Voters data
       let data = {}, electors = [];
+      var gs = await db.query("select * from ehub_vote.elector where tag = '"+tg+"' and election_id = "+id);
       var vs = await db.query("select * from ehub_vote.elector where election_id = "+id);
       var res = await db.query("select * from ehub_vote.election where id = "+id);
-      if(res && res.length > 0){
-         const voters = res[0].voters_whitelist && JSON.parse(res[0].voters_whitelist) || [];
-         const voters_data = res[0].voters_whitedata && JSON.parse(res[0].voters_whitedata) || [];
+      console.log(gs)
+      if(res && res.length > 0 && gs.length <= 0){
+         var voters = res[0].voters_whitelist && JSON.parse(res[0].voters_whitelist) || [];
          const { group_id } = res[0]
          // electors = voters;
-         if(voters.length > 0 && voters.length != voters_data.length){
+         if(voters.length > 0 ){
+            voters = voters.filter( r => r != tg)
             for(const tag of voters){
               let sql;
               if(group_id === 2) sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`
@@ -751,10 +752,8 @@ module.exports.SSO = {
               if(ss && ss.length > 0) electors.push(ss[0])
             }
             // Update Voters_whitedata
-            await db.query("update ehub_vote.election set voters_whitedata = ?, voters_count = ? where id = ?",[JSON.stringify(electors),electors.length,id])
+            await db.query("update ehub_vote.election set voters_whitelist = ?, voters_whitedata = ?, voters_count = ? where id = ?",[JSON.stringify(voters), JSON.stringify(electors),electors.length,id])
          
-         }else if(voters_data.length > 0){
-            electors = voters_data;
          }
 
          if(vs && vs.length > 0){
@@ -766,11 +765,71 @@ module.exports.SSO = {
            })
             
          }
+         return { ...res && res[0], electors };
+
+      }else {
+         return null;
       }
       
-      return { ...res && res[0], electors };
+      
    },
 
+   addVoter : async (id,tg) => {
+      // Voters data
+      let data = {}, electors = [];
+      var gs = await db.query("select * from ehub_vote.elector where tag = '"+tg+"' and election_id = "+id);
+      var vs = await db.query("select * from ehub_vote.elector where election_id = "+id);
+      var res = await db.query("select * from ehub_vote.election where id = "+id);
+      console.log(gs)
+      if(res && res.length > 0 && gs.length <= 0){
+         var voters = res[0].voters_whitelist && JSON.parse(res[0].voters_whitelist) || [];
+         const { group_id } = res[0]
+         voter = voters.find( r => r == tg)
+         // electors = voters;
+         if(voters.length > 0 && !voter ){
+            voters.unshift(tg);
+            for(const tag of voters){
+              let sql;
+              if(group_id === 2) sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`
+              if(group_id === 1) sql = `select s.regno as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),s.lname) as name,s.inst_email as mail from osis.students_db s where s.regno = ?`
+              const ss = await db.query(sql,[tag])
+              if(ss && ss.length > 0) electors.push(ss[0])
+            }
+            // Update Voters_whitedata
+            await db.query("update ehub_vote.election set voters_whitelist = ?, voters_whitedata = ?, voters_count = ? where id = ?",[JSON.stringify(voters), JSON.stringify(electors),electors.length,id])
+         
+            if(vs && vs.length > 0){
+               electors = electors.map(row => {
+                 const tag = row.tag;
+                 const vf = vs.find(r => r.tag == tag)
+                 if(vf) return { ...row, voted:1 }
+                 return { ...row, voted:0 }
+               })
+             }
+             return { ...res && res[0], electors };
+         }else {
+            return null;
+         }
+
+      }else {
+         return null;
+      }
+   },
+
+   removePortfolio : async (id) => {
+      var res = await db.query("delete from ehub_vote.portfolio where id = "+id);
+      return res;
+   },
+
+   insertPortfolio : async (data) => {
+      var res = await db.query("insert into ehub_vote.portfolio set ?", data);
+      return res;
+   },
+
+   updatePortfolio : async (id,data) => {
+      var res = await db.query("update ehub_vote.portfolio set ? where id = "+id, data);
+      return res;
+   },
 
 
 

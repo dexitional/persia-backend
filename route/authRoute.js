@@ -64,7 +64,11 @@ Router.get('/evs/receipt/:id/:tag', SSOController.fetchEvsReceipt);
 Router.get('/evs/register/:id', SSOController.fetchEvsRegister);
 Router.get('/evs/update/:tag', SSOController.fetchEvsUpdate);
 Router.post('/evs/setcontrol', SSOController.updateEvsControl);
-Router.get('/evs/deletevoter/:tag', SSOController.removeVoter);
+Router.delete('/evs/deletevoter/:id/:tag', SSOController.removeVoter);
+Router.post('/evs/addvoter', SSOController.addVoter);
+Router.delete('/evs/deleteportfolio/:id', SSOController.removePortfolio);
+Router.post('/evs/saveportfolio', SSOController.savePortfolio);
+
 
 
 /* SSO - Identity ROUTES */

@@ -1000,18 +1000,76 @@ updateEvsControl : async (req,res) => {
 
 removeVoter : async (req,res) => {
   try{
-      const { tag } = req.params;
-      var resp = await SSO.removeVoter(tag);
+      const { id,tag } = req.params;
+      var resp = await SSO.removeVoter(id,tag);
+      console.log(resp)
       if(resp){
-          res.status(200).json({success:true, data:resp});
+        res.status(200).json({success:true, data:resp});
       }else{
-          res.status(200).json({success:false, data: null, msg:"Action failed!"});
+        res.status(200).json({success:false, data: null, msg:"Elector voted already !"});
       }
   }catch(e){
       console.log(e)
       res.status(200).json({success:false, data: null, msg: "Something wrong !"});
   }
 },
+
+addVoter : async (req,res) => {
+  try{
+      const { id,tag } = req.body;
+      var resp = await SSO.addVoter(id,tag);
+      console.log(resp)
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Elector exist already !"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+
+
+removePortfolio : async (req,res) => {
+  try{
+      const { id } = req.params;
+      var resp = await SSO.removePortfolio(id);
+      console.log(resp)
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed !"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
+savePortfolio : async (req,res) => {
+  try{
+      const { id } = req.body;
+      console.log(req.body)
+      var resp;
+      if(id <= 0){
+        resp = await SSO.insertPortfolio(req.body);
+      }else{
+        resp = await SSO.updatePortfolio(id,req.body);
+      }
+      console.log(resp)
+      if(resp){
+        res.status(200).json({success:true, data:resp});
+      }else{
+        res.status(200).json({success:false, data: null, msg:"Action failed!"});
+      }
+  }catch(e){
+      console.log(e)
+      res.status(200).json({success:false, data: null, msg: "Something wrong !"});
+  }
+},
+
 
 
 
