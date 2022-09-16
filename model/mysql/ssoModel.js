@@ -852,9 +852,9 @@ module.exports.SSO = {
         for (const tag of voters) {
           let sql;
           if (group_id === 2)
-            sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`;
+            sql = `select s.staff_no as tag,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,s.ucc_mail as mail from hr.staff s where s.staff_no = ?`;
           if (group_id === 1)
-            sql = `select s.regno as tag,concat(s.fname,ifnull(concat(' ',s.mname),' '),s.lname) as name,s.inst_email as mail from osis.students_db s where s.regno = ?`;
+            sql = `select s.regno as tag,concat(s.fname,ifnull(concat(' ',s.mname),''),' ',s.lname) as name,s.inst_email as mail from osis.students_db s where s.regno = ?`;
           const ss = await db.query(sql, [tag]);
           if (ss && ss.length > 0) electors.push(ss[0]);
         }
@@ -876,7 +876,6 @@ module.exports.SSO = {
         });
       }
     }
-
     return { ...(res && res[0]), electors };
   },
 
