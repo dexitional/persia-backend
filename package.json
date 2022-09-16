@@ -12,7 +12,7 @@
     "url": "git+https://github.com/dexitional/pos.git"
   },
   "keywords": [
-    "POS"
+    "PERSIA"
   ],
   "author": "Ebenezer Kwabena Blay Ackah",
   "license": "ISC",
@@ -28,13 +28,14 @@
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "ejs": "^3.1.6",
-    "ejs-mate": "^3.0.0",
+    "ejs-mate": "^4.0.0",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.1",
     "google-admin-sdk": "^5.0.0",
     "google-auth-library": "^7.10.2",
-    "googleapis": "^39.2.0",
-    "jimp": "^0.16.1",
+    "googleapis": "^107.0.0",
+    "iconv-lite": "^0.6.3",
+    "jimp": "^0.16.0",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.1",
     "mongoose": "^5.12.4",
