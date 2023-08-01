@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkclient=self.webpackChunkclient||[]).push([[377],{1377:function(c,e,i){c.exports=i.p+"static/media/favicon.966c579063144fd1c3c0.ico"}}]);

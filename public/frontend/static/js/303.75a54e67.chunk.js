@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkclient=self.webpackChunkclient||[]).push([[303],{6303:function(e,t,c){e.exports=c.p+"static/media/logo_portal.0a92cf5b75130a7405ef.png"}}]);

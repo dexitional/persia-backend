@@ -3,6 +3,7 @@ var db = require("../../config/mysql");
 const { getUsername } = require("../../middleware/util");
 const { Box } = require("./boxModel");
 var fs = require("fs");
+const crypto = require("crypto-js");
 
 // process.env.THEME_TAG
 
@@ -880,92 +881,109 @@ module.exports.SSO = {
   },
 
   postEvsData: async (data) => {
-    const { id, tag, votes, name } = data;
-
+    const { id, tag, votes, hash } = data;
+    
     // START TRANSACTION
     //await db.query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
     //await db.beginTransaction();
     try {
-      // Get Portfolio count & Verify whether equal to data posted
-      var res = await db.query(
-        "select * from ehub_vote.portfolio where status = 1 and election_id = " +
-          id
-      );
-      if (res && res.length > 0) {
-        const count = res.length;
-        var vt = await db.query(
-          "select * from ehub_vote.elector where election_id = " +
-            id +
-            " and trim(tag) = '" +
-            tag +
-            "' and vote_status = 1"
-        );
-        if (vt && vt.length <= 0) {
-          if (count == Object.values(votes).length) {
-            // Update Candidate Votes Count
-            const vals = Object.values(votes);
-            var update_count = 0;
-            if (vals.length > 0) {
-              for (var val of vals) {
-                const cs = await db.query(
-                  "select * from ehub_vote.candidate where id = " + val
-                );
-                if (cs && cs.length > 0) {
-                  const ups = await db.query(
-                    "update ehub_vote.candidate set votes = (votes+1) where id = " +
-                      val
-                  );
-                  if (ups.affectedRows > 0) update_count += 1;
+      // Get Election Data
+      var resp = await db.query("select v.tag,e.id as eid,e.tag,e.voters_count,e.voters_whitedata,e.live_status,e.end,e.status,v.vote_time,v.vote_status,v.vote_sum,JSON_SEARCH(e.voters_whitelist, 'one', '"+tag+"') as voter from ehub_vote.election e left join ehub_vote.elector v on (e.id = v.election_id and v.tag = '"+tag+"') where json_search(e.voters_whitelist, 'one', '"+tag+"') is not null and e.live_status = 1 and e.id = "+id);
+      if (resp && resp.length > 0){
+         const { vote_status, status, live_status,end, voters_whitedata, voter } = resp[0];
+         
+         const vt_index = parseInt(voter.replaceAll('"','').replaceAll('[','').replaceAll(']','').replaceAll('$',''))
+         const vt_user = JSON.parse(voters_whitedata)[vt_index];
+         const check_hash = crypto.SHA256(`${tag}${id}${vt_user['name']}`).toString()
+
+         // Check for Intrusion or attack
+         if(hash != check_hash)  throw new Error(`Elector intrusion detected`);
+
+         // Get Portfolio count & Verify whether equal to data posted
+          var res = await db.query("select * from ehub_vote.portfolio where status = 1 and election_id = " +id);
+          if (res && res.length > 0 && live_status > 0 && tag == vt_user['tag'] && (status == 'STARTED' || (status == 'ENDED'))) { // && parseInt(moment().diff(moment(end),'seconds')) <= 120
+            
+            const count = res.length;
+            // var vt = await db.query(
+            //   "select * from ehub_vote.elector where election_id = " +
+            //     id +
+            //     " and trim(tag) = '" +
+            //     tag +
+            //     "' and vote_status = 1"
+            // );
+            if (!vote_status) {
+              if (count == Object.values(votes).length) {
+                // Update Candidate Votes Count
+                const vals = Object.values(votes);
+                var update_count = 0;
+                if (vals.length > 0) {
+                  for (var val of vals) {
+                    const cs = await db.query(
+                      "select * from ehub_vote.candidate where id = " + val
+                    );
+                    if (cs && cs.length > 0) {
+                      const ups = await db.query(
+                        "update ehub_vote.candidate set votes = (votes+1) where id = " +
+                          val
+                      );
+                      if (ups.affectedRows > 0) update_count += 1;
+                    }
+                  }
                 }
+
+                if (count != update_count) {
+                  throw new Error(`Votes partially received`);
+                  //return { success: false, msg: 'Votes partially recorded', code: 1001 }
+                }
+                // Insert Into Elector Database
+                const dm = {
+                  vote_status: 1,
+                  vote_sum: Object.values(votes).join(","),
+                  vote_time: new Date(),
+                  name: vt_user.name,
+                  tag: vt_user.tag,
+                  election_id: id,
+                };
+                const ins = await db.query(
+                  "insert into ehub_vote.elector set ?",
+                  dm
+                );
+
+                if (ins && ins.insertId > 0) {
+                  //await db.commit();
+                  return { success: true, msg: "Voted successfully", code: 1000 };
+                } else {
+                  throw new Error(`Votes saved for elector`);
+                  //return { success: false, msg: 'Votes saved for elector', code: 1002 }
+                }
+              } else {
+                // Votes Not Received
+                throw new Error(`Votes partially received`);
+                //return { success: false, msg: 'Votes partially received', code: 1003 }
               }
-            }
-
-            if (count != update_count) {
-              throw new Error(`Votes partially received`);
-              //return { success: false, msg: 'Votes partially recorded', code: 1001 }
-            }
-            // Insert Into Elector Database
-            const dm = {
-              vote_status: 1,
-              vote_sum: Object.values(votes).join(","),
-              vote_time: new Date(),
-              name,
-              tag,
-              election_id: id,
-            };
-            const ins = await db.query(
-              "insert into ehub_vote.elector set ?",
-              dm
-            );
-
-            if (ins && ins.insertId > 0) {
-              //await db.commit();
-              return { success: true, msg: "Voted successfully", code: 1000 };
             } else {
-              throw new Error(`Votes saved for elector`);
-              //return { success: false, msg: 'Votes saved for elector', code: 1002 }
+              // Voted Already
+              throw new Error(`Elector already voted`);
+              //return { success: false, msg: 'Elector already voted', code: 1004 }
             }
           } else {
-            // Votes Not Received
-            throw new Error(`Votes partially received`);
-            //return { success: false, msg: 'Votes partially received', code: 1003 }
+            throw new Error(`vote submission disallowed`);
+            //return { success: false, msg: 'Portfolio not found', code: 1005 }
           }
-        } else {
-          // Voted Already
-          throw new Error(`Elector already voted`);
-          //return { success: false, msg: 'Elector already voted', code: 1004 }
-        }
+
+
       } else {
-        throw new Error(`Portfolio not found`);
-        //return { success: false, msg: 'Portfolio not found', code: 1005 }
+        throw new Error(`Elector intrusion detected`);
       }
+
+
+     
     } catch (e) {
       //db.rollback();
       //console.info('Rollback successful');
       return {
         success: false,
-        msg: e?.getMessage() || "Please re-submit again",
-        code: 1004,
+        msg: e?.message || "Please re-submit again",
       };
     }
   },

@@ -9,6 +9,7 @@ const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
 /* Controllers */
 var ApplicantController = require("../controller/admission/applicantController");
 var SSOController = require("../controller/admission/ssoController");
+const { voteLimiter } = require("../middleware/rateLimitter");
 
 /* SSO User Photo */
 Router.get("/photos", SSOController.fetchPhoto);
@@ -54,8 +55,8 @@ Router.post("/hrs/hrsjob", SSOController.postHRJobData);
 Router.delete("/hrs/hrsjob/:id", SSOController.deleteHRJobData);
 
 /* EVS MODULE ROUTES */
-Router.get("/evs/data/:id/:tag", SSOController.fetchEvsData);
-Router.post("/evs/data", SSOController.postEvsData);
+Router.get("/evs/data/:id", SSOController.fetchEvsData); // Tag must be query Parameter
+Router.post("/evs/data", voteLimiter, SSOController.postEvsData);
 Router.get("/evs/monitor/:id", SSOController.fetchEvsMonitor);
 Router.get("/evs/result/:id", SSOController.fetchEvsMonitor);
 Router.get("/evs/receipt/:id/:tag", SSOController.fetchEvsReceipt);

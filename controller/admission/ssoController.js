@@ -24,22 +24,14 @@ const { Box } = require("../../model/mysql/boxModel");
 module.exports = {
   authenticateUser: async (req, res) => {
     const { username, password } = req.body;
-    console.log(req.body);
     try {
       var user = await SSO.verifyUser({ username, password });
-      console.log(user);
       if (user && user.length > 0) {
         var roles = user[0].uid > 0 ? await SSO.fetchRoles(user[0].uid) : []; // Roles
-        const photo = `${req.protocol}://${req.get(
-          "host"
-        )}/api/photos/?tag=${encodeURIComponent(
-          user[0].tag.toString().toLowerCase()
-        )}`;
+        const photo = `${req.protocol}://${req.get("host")}/api/photos/?tag=${encodeURIComponent(user[0].tag.toString().toLowerCase())}`;
         var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
-        var userdata =
-          user[0].uid > 0
-            ? await SSO.fetchUser(user[0].uid, user[0].group_id)
-            : user; // UserData
+        console.log(evsRoles)
+        var userdata = user[0].uid > 0 ? await SSO.fetchUser(user[0].uid, user[0].group_id) : user; // UserData
         userdata[0] = userdata
           ? {
               ...userdata[0],
@@ -48,7 +40,7 @@ module.exports = {
             }
           : null;
         var data = {
-          roles: [...roles, ...evsRoles],
+          roles: [...roles, ...evsRoles ],
           photo,
           user: userdata && userdata[0],
         };
@@ -105,7 +97,7 @@ module.exports = {
             ? { ...userdata[0], user_group: user.gid, mail: email }
             : null;
           var data = {
-            roles: [...roles, ...evsRoles],
+            roles: [...roles, ...evsRoles ],
             photo,
             user: userdata && userdata[0],
           };
@@ -605,20 +597,14 @@ module.exports = {
         if (pic) {
           res.status(200).sendFile(pic);
         } else {
-          res
-            .status(200)
-            .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
+          res.status(200).sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
         }
       } else {
-        res
-          .status(200)
-          .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
+        res.status(200).sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
       }
     } catch (err) {
       console.log(err);
-      res
-        .status(200)
-        .sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
+      res.status(200).sendFile(path.join(__dirname, "/../../public/cdn", "none.png"));
     }
   },
 
@@ -1305,7 +1291,8 @@ module.exports = {
 
   fetchEvsData: async (req, res) => {
     try {
-      const { id, tag } = req.params;
+      const { id } = req.params;
+      const { tag } = req.query;
       var resp = await SSO.fetchEvsData(id, tag);
       if (resp) {
         res.status(200).json({ success: true, data: resp });
@@ -1323,7 +1310,7 @@ module.exports = {
   },
 
   postEvsData: async (req, res) => {
-    console.log(req.body);
+    console.log(req.ip);
     try {
       var resp = await SSO.postEvsData(req.body);
       res.status(200).json(resp);
