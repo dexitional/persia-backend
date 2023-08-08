@@ -10,6 +10,7 @@ const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwzyx", 8);
 var ApplicantController = require("../controller/admission/applicantController");
 var SSOController = require("../controller/admission/ssoController");
 const { voteLimiter } = require("../middleware/rateLimitter");
+const { verifyToken } = require("../middleware/verifyToken");
 
 /* SSO User Photo */
 Router.get("/photos", SSOController.fetchPhoto);
@@ -55,20 +56,20 @@ Router.post("/hrs/hrsjob", SSOController.postHRJobData);
 Router.delete("/hrs/hrsjob/:id", SSOController.deleteHRJobData);
 
 /* EVS MODULE ROUTES */
-Router.get("/evs/data/:id", SSOController.fetchEvsData); // Tag must be query Parameter
-Router.post("/evs/data", voteLimiter, SSOController.postEvsData);
-Router.get("/evs/monitor/:id", SSOController.fetchEvsMonitor);
-Router.get("/evs/result/:id", SSOController.fetchEvsMonitor);
-Router.get("/evs/receipt/:id/:tag", SSOController.fetchEvsReceipt);
-Router.get("/evs/register/:id", SSOController.fetchEvsRegister);
-Router.get("/evs/update/:tag", SSOController.fetchEvsUpdate);
-Router.post("/evs/setcontrol", SSOController.updateEvsControl);
-Router.delete("/evs/deletevoter/:id/:tag", SSOController.removeVoter);
-Router.post("/evs/addvoter", SSOController.addVoter);
-Router.delete("/evs/deleteportfolio/:id", SSOController.removePortfolio);
-Router.post("/evs/saveportfolio", SSOController.savePortfolio);
-Router.delete("/evs/deletecandidate/:id", SSOController.removeCandidate);
-Router.post("/evs/savecandidate", SSOController.saveCandidate);
+Router.get("/evs/data/:id", [ verifyToken], SSOController.fetchEvsData); // Tag must be query Parameter
+Router.post("/evs/data", [ verifyToken, voteLimiter ], SSOController.postEvsData);
+Router.get("/evs/monitor/:id",[ verifyToken], SSOController.fetchEvsMonitor);
+Router.get("/evs/result/:id",[ verifyToken], SSOController.fetchEvsMonitor);
+Router.get("/evs/receipt/:id/:tag",[ verifyToken], SSOController.fetchEvsReceipt);
+Router.get("/evs/register/:id",[ verifyToken], SSOController.fetchEvsRegister);
+Router.get("/evs/update/:tag",[ verifyToken], SSOController.fetchEvsUpdate);
+Router.post("/evs/setcontrol",[ verifyToken], SSOController.updateEvsControl);
+Router.delete("/evs/deletevoter/:id/:tag",[ verifyToken], SSOController.removeVoter);
+Router.post("/evs/addvoter",[ verifyToken], SSOController.addVoter);
+Router.delete("/evs/deleteportfolio/:id",[ verifyToken], SSOController.removePortfolio);
+Router.post("/evs/saveportfolio",[ verifyToken], SSOController.savePortfolio);
+Router.delete("/evs/deletecandidate/:id",[ verifyToken], SSOController.removeCandidate);
+Router.post("/evs/savecandidate",[ verifyToken], SSOController.saveCandidate);
 
 /* SSO - IDENTITY ROUTES */
 Router.get("/sso/identity", SSOController.fetchSSOIdentity);

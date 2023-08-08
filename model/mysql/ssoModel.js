@@ -28,56 +28,31 @@ module.exports.SSO = {
   },
 
   verifyUserByEmail: async ({ email }) => {
-    const sql =
-      "select u.* from ehub_identity.user u where u.username = '" + email + "'";
-    const res = await db.query(sql);
+    const sql = "select u.* from ehub_identity.user u where u.username = ?";
+    const res = await db.query(sql,[email]);
     return res;
   },
 
   updateDomainPassword: async (tag, gid, password, sdata) => {
     var sql, res;
     if (parseInt(gid) == 1) {
-      sql =
-        "update osisextra.useraccount set password = md5('" +
-        password +
-        "'), cdate = now() where regno = '" +
-        tag +
-        "'";
-      res = await db.query(sql);
+      sql = "update osisextra.useraccount set password = md5(?), cdate = now() where regno = ?";
+      res = await db.query(sql, [password,tag]);
     } else if (parseInt(gid) == 2) {
-      const isExist = await db.query(
-        "select * from hr.`user` where staff_no = '" + tag + "'"
-      );
+      const isExist = await db.query("select * from hr.`user` where staff_no = ?",[tag]);
       if (isExist && isExist.length > 0) {
-        sql =
-          "update hr.`user` set password = '" +
-          password +
-          "' where staff_no = '" +
-          tag +
-          "'";
-        res = await db.query(sql);
+        sql = "update hr.`user` set password = ? where staff_no = ?";
+        res = await db.query(sql,[password,tag]);
       } else {
-        const dt = {
-          username: tag,
-          staff_no: tag,
-          password,
-          role: "03",
-          roles: "03",
-        };
+        const dt = { username: tag, staff_no: tag, password, role: "03", roles: "03" };
         sql = "insert into hr.`user` set ?";
         res = await db.query(sql, dt);
       }
     }
 
     if (res && (res.affectedRows > 0 || res.insertId > 0)) {
-      const sql =
-        "update ehub_identity.user set flag_ad = " +
-        sdata.userdata.flag_ad +
-        ",flag_gs = " +
-        sdata.userdata.flag_gs +
-        " where uid = " +
-        sdata.userdata.uid;
-      const resx = await db.query(sql);
+      const sql ="update ehub_identity.user set flag_ad = ?, flag_gs = ? where uid = ?";
+      const resx = await db.query(sql, [ sdata.userdata.flag_ad, sdata.userdata.flag_gs, sdata.userdata.uid ]);
     }
     return res;
   },
@@ -101,9 +76,7 @@ module.exports.SSO = {
       // Update osis.students_db set inst_email = mail
     } else {
       // Update hr.staff set ucc_mail = mail
-      const res = await db.query(
-        "update hr.staff set ucc_mail = '" + mail + "' where staff_no = " + tag
-      );
+      const res = await db.query("update hr.staff set ucc_mail = ? where staff_no = ?",[mail,tag]);
     }
   },
 
@@ -241,35 +214,20 @@ module.exports.SSO = {
 
   fetchSSOUser: async (tag) => {
     const sql =
-      "select u.*,p.photo_id,g.group_name from ehub_identity.user u left join ehub_identity.group g on u.group_id = g.group_id left join ehub_identity.photo p on p.uid = u.uid where u.tag = '" +
-      tag +
-      "'";
-    const res = await db.query(sql);
+      "select u.*,p.photo_id,g.group_name from ehub_identity.user u left join ehub_identity.group g on u.group_id = g.group_id left join ehub_identity.photo p on p.uid = u.uid where u.tag = ?";
+    const res = await db.query(sql,[tag]);
     return res;
   },
 
   insertPhoto: async (uid, tag, group_id, path) => {
-    const sql =
-      "insert into ehub_identity.photo(uid,tag,path,group_id) values(" +
-      uid +
-      ",'" +
-      tag +
-      "','" +
-      path +
-      "'," +
-      group_id +
-      ")";
-    const res = await db.query(sql);
+    const sql = "insert into ehub_identity.photo(uid,tag,path,group_id) values(?,?,?,?)";
+    const res = await db.query(sql,[uid,tag,path,group_id]);
     return res;
   },
 
   updatePhoto: async (pid, path) => {
-    const sql =
-      "update ehub_identity.photo set path = '" +
-      path +
-      "' where photo_id = " +
-      pid;
-    const res = await db.query(sql);
+    const sql = "update ehub_identity.photo set path = ? where photo_id = ?";
+    const res = await db.query(sql, [ path,pid ]);
     return res;
   },
 

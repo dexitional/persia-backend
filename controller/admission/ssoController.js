@@ -30,7 +30,6 @@ module.exports = {
         var roles = user[0].uid > 0 ? await SSO.fetchRoles(user[0].uid) : []; // Roles
         const photo = `${req.protocol}://${req.get("host")}/api/photos/?tag=${encodeURIComponent(user[0].tag.toString().toLowerCase())}`;
         var evsRoles = await SSO.fetchEvsRoles(user[0].tag); // EVS Roles
-        console.log(evsRoles)
         var userdata = user[0].uid > 0 ? await SSO.fetchUser(user[0].uid, user[0].group_id) : user; // UserData
         userdata[0] = userdata
           ? {
@@ -46,7 +45,7 @@ module.exports = {
         };
         // Generate Session Token
         console.log(data);
-        const token = jwt.sign({ data: user }, "secret", {
+        const token = jwt.sign({ data: user }, "miguelblayackah", {
           expiresIn: 60 * 60,
         });
         data.token = token;
@@ -102,7 +101,7 @@ module.exports = {
             user: userdata && userdata[0],
           };
           // Generate Session Token
-          const token = jwt.sign({ data: user }, "secret", {
+          const token = jwt.sign({ data: user }, "miguelblayackah", {
             expiresIn: 60 * 60,
           });
           data.token = token;

@@ -16,14 +16,22 @@ app.use("/public",express.static("public"));
 app.use(cors()); 
 app.use(compression()); 
 app.use(fileUpload());
+// Security Guards
 app.use(helmet());
- 
+
+// Token Initializations
+app.use(function(req, res, next) {
+  res.header(
+    "Access-Control-Allow-Headers",
+    "x-access-token, Origin, Content-Type, Accept"
+  );
+  next();
+});
 
 // Initialise App Routes
 app.use('/api',auth); 
 app.use('/api',alumni); 
 app.use("/",express.static("public/frontend"));
-
 
 // Start Server Instance
 var port = process.env.PORT || 5020;
